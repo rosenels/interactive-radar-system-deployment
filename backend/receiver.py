@@ -1,21 +1,22 @@
 import socket
+from sbs_decoder import *
 
 REMOTE_HOST = "localhost"
 PORT  = 0 # 0 means default port for the selected type input
 RAW_IN_PORT = 30002
 SBS_PORT = 30003
 
-MODE = "raw-in" # "raw-in" or "sbs"
+MODE = "sbs" # "raw-in" or "sbs"
 
 def raw_in_loop(sock):
     global quit
     try:
-        data = sock.readline(10)
+        msg = sock.readline(10)
     except:
-        data = None
+        msg = None
 
-    if data:
-        print(data, end="")
+    if msg:
+        print(msg, end="")
     else:
         print("Connection gone.\n")
         quit = True
@@ -23,12 +24,12 @@ def raw_in_loop(sock):
 def sbs_in_loop(sock):
     global quit
     try:
-        data = sock.readline()
+        msg = sock.readline()
     except:
-        data = None
+        msg = None
 
-    if data:
-        print(data, end="")
+    if msg:
+        print(msg, end="")
     else:
         print("Connection gone.\n")
         quit = True
