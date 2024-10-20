@@ -28,10 +28,10 @@ new_flight = {
 def get_flight(icao):
     for flight in flights:
         if flight["icao"] == icao:
-            return flight
-    flight = new_flight
-    flight["icao"] = icao
-    return flight
+            return dict(flight).copy()
+    example_flight = new_flight
+    example_flight["icao"] = icao
+    return example_flight.copy()
 
 def remove_flight(icao):
     if icao == None:

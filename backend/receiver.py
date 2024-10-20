@@ -1,5 +1,5 @@
 import socket
-from sbs_decoder import *
+import sbs_decoder
 
 REMOTE_HOST = "localhost"
 PORT  = 0 # 0 means default port for the selected type input
@@ -30,7 +30,7 @@ def sbs_in_loop(sock):
 
     if msg:
         print(msg, end="")
-        parse_sbs_msg(msg)
+        sbs_decoder.parse_sbs_msg(msg)
     else:
         print("Connection gone.\n")
         quit = True
@@ -71,4 +71,4 @@ except KeyboardInterrupt:
     quit = True
 
 sock.close()
-print(flights)
+print(sbs_decoder.flights)
