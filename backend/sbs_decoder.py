@@ -33,22 +33,48 @@ def get_flight(icao):
     flight["icao"] = icao
     return flight
 
-def update_flights(icao=None, flight=None):
+def remove_flight(icao):
+    if icao == None:
+        return
+    for flight in flights:
+        if flight["icao"] == icao:
+            flights.remove(flight)
+            return
+
+def update_flights(flight=None):
+    global flights
     updated_flights = []
+
+    if flight != None:
+        icao = flight["icao"]
+    else:
+        icao = None
+    remove_flight(icao)
+
     for i in range(len(flights)):
-        if flights[i]["icao"] == icao and icao != None and flight != None:
-            flight["last_datetime"] = datetime.now()
-            updated_flights.append(flight)
-        elif flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
+        if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
             updated_flights.append(flights[i])
+
+    if icao != None:
+        flight["last_datetime"] = datetime.now()
+        updated_flights.append(flight)
+
     flights = updated_flights
 
 def prepare_value(old_value, new_value):
     if new_value == None or new_value == "":
         return old_value
+    if isinstance(new_value, str):
+        try:
+            new_value = float(new_value)
+            if new_value.is_integer():
+                new_value = int(new_value)
+        except:
+            pass
     return new_value
 
 def parse_sbs_msg(msg):
+    msg = str(msg).replace("\n", "").split(",")
     icao = msg[4]
     flight = get_flight(icao)
     flight["session_id"] = prepare_value(flight["session_id"], msg[2])
@@ -67,4 +93,4 @@ def parse_sbs_msg(msg):
     flight["emergency_code"] = prepare_value(flight["emergency_code"], msg[17])
     flight["spi_ident"] = prepare_value(flight["spi_ident"], msg[18])
     flight["on_ground"] = prepare_value(flight["on_ground"], msg[19])
-    update_flights(icao, flight)
+    update_flights(flight)

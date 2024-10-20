@@ -30,6 +30,7 @@ def sbs_in_loop(sock):
 
     if msg:
         print(msg, end="")
+        parse_sbs_msg(msg)
     else:
         print("Connection gone.\n")
         quit = True
@@ -70,3 +71,4 @@ except KeyboardInterrupt:
     quit = True
 
 sock.close()
+print(flights)
