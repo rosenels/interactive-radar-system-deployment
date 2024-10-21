@@ -1,15 +1,17 @@
-import socket
+import socket, threading
 import sbs_decoder
 
 REMOTE_HOST = "localhost"
-PORT  = 0 # 0 means default port for the selected type input
+PORT = 0 # 0 means default port for the selected type input
 RAW_IN_PORT = 30002
 SBS_PORT = 30003
 
 MODE = "sbs" # "raw-in" or "sbs"
 
+flights = []
+
 def raw_in_loop(sock):
-    global quit
+    global flights, quit
     try:
         msg = sock.readline(10)
     except:
@@ -22,7 +24,7 @@ def raw_in_loop(sock):
         quit = True
 
 def sbs_in_loop(sock):
-    global quit
+    global flights, quit
     try:
         msg = sock.readline()
     except:
@@ -31,44 +33,62 @@ def sbs_in_loop(sock):
     if msg:
         print(msg, end="")
         sbs_decoder.parse_sbs_msg(msg)
+        flights = sbs_decoder.flights
     else:
         print("Connection gone.\n")
         quit = True
 
-if MODE.upper() == "RAW-IN":
-    if PORT == 0:
-        PORT = RAW_IN_PORT
-    loop = raw_in_loop
-elif MODE.upper() == "SBS":
-    if PORT == 0:
-        PORT = SBS_PORT
-    loop = sbs_in_loop
-else:
-    print("Wrong MODE was selected.\n")
-    exit(1)
-
-try:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((REMOTE_HOST, PORT))
-    sock = sock.makefile(mode="r")
-    print("Connected to %s:%d\n" % (REMOTE_HOST, PORT))
-except:
-    print("Connection refused\n")
-    exit(1)
-
 quit = False
+sock = None
+receiver_thread = None
 
-try:
-    while not quit:
-        loop(sock)
+def operate():
+    global PORT
+    if MODE.upper() == "RAW-IN":
+        if PORT == 0:
+            PORT = RAW_IN_PORT
+        loop = raw_in_loop
+    elif MODE.upper() == "SBS":
+        if PORT == 0:
+            PORT = SBS_PORT
+        loop = sbs_in_loop
+    else:
+        print("Wrong MODE was selected.\n")
+        exit(1)
 
-except (ConnectionResetError, ConnectionAbortedError):
-    print("Connection reset.\n")
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((REMOTE_HOST, PORT))
+        sock = sock.makefile(mode="r")
+        print("Connected to %s:%d\n" % (REMOTE_HOST, PORT))
+    except:
+        print("Connection refused\n")
+        exit(1)
+
+    global quit
+    try:
+        while not quit:
+            loop(sock)
+
+    except (ConnectionResetError, ConnectionAbortedError):
+        print("Connection reset.\n")
+        quit = True
+
+    except KeyboardInterrupt:
+        print("^C")
+        quit = True
+
+def start():
+    global receiver_thread
+    receiver_thread = threading.Thread(target=operate)
+    receiver_thread.start()
+
+def stop():
+    global receiver_thread, quit
     quit = True
-
-except KeyboardInterrupt:
-    print("^C")
-    quit = True
-
-sock.close()
-print(sbs_decoder.flights)
+    receiver_thread.join()
+    try:
+        sock.close()
+    except:
+        pass
+    print(flights)
