@@ -1,4 +1,33 @@
-body {
+html, body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#map {
+  width: 100%;
+}
+
+#flight-info {
+  padding: 10px;
+  border-top: 1px solid #ccc;
+  overflow-y: auto;
+}
+
+.map-label-above-icon {
+  margin: 0px;
+  position: absolute;
+  left: -16px;
+  right: -16px;
+  text-align: center;
+}
+
+.custom-icon img {
+  transform-origin: center;
+}
+
+/* body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -10,4 +39,4 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
-}
+} */
