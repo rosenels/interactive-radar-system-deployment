@@ -3,9 +3,11 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
 
+let spectatedFlightIcao = null;
+let foundedSpectatedFlight = false;
+
 function App() {
   const mapRef = useRef(null);
-  const [spectatedFlightIcao, setSpectatedFlightIcao] = useState(null);
   const [flightDetails, setFlightDetails] = useState('');
 
   useEffect(() => {
@@ -22,6 +24,7 @@ function App() {
 
     map.on('click', () => {
       setFlightDetails('');
+      spectatedFlightIcao = null;
     });
 
     fetchAndDisplayFlights();
@@ -34,14 +37,14 @@ function App() {
     };
   }, []);
 
-  const fetchAndDisplayFlights = async () => {
+  async function fetchAndDisplayFlights() {
     const map = mapRef.current;
 
     let data = await (await fetch('http://localhost:5000/flights', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      }
+      // method: 'GET',
+      // headers: {
+      //   'Content-Type': 'application/json',
+      // }
     })).json()
 
     // Clear existing markers
@@ -52,7 +55,7 @@ function App() {
     });
 
     const flights = data.flights;
-    let foundedSpectatedFlight = false;
+    foundedSpectatedFlight = false;
 
     for (const i in flights) {
       const flight = flights[i];
@@ -79,9 +82,15 @@ function App() {
           title: flight.aircraft_code,
         }).addTo(map);
 
+        // flightMarker.bindPopup(`
+        //   <strong>${flight.aircraft_code} ${flight.number}</strong><br>
+        //   Callsign: ${flight.callsign}<br>
+        //   Altitude: ${flight.altitude} feet
+        // `);
+
         flightMarker.on('click', () => {
           displayFlightInfo(flight);
-          setSpectatedFlightIcao(flight.icao);
+          spectatedFlightIcao = flight.icao;
           foundedSpectatedFlight = true;
         });
       }
@@ -95,7 +104,7 @@ function App() {
     }
   };
 
-  const createRotatedIcon = (angle, iconUrl, iconSize, htmlAfterIcon) => {
+  function createRotatedIcon(angle, iconUrl, iconSize, htmlAfterIcon) {
     return L.divIcon({
       html: `<img src="${iconUrl}" style="transform: rotate(${angle}deg);" width="${iconSize[0]}" height="${iconSize[1]}"/>${htmlAfterIcon}`,
       iconSize: iconSize,
@@ -104,7 +113,7 @@ function App() {
     });
   };
 
-  const displayFlightInfo = (flight) => {
+  function displayFlightInfo(flight) {
     setFlightDetails(`
       <strong>${flight.icao}</strong><br />
       Callsign: ${flight.callsign}<br />
@@ -112,18 +121,18 @@ function App() {
     `);
   };
 
-  const hideFlightInfo = () => {
+  function hideFlightInfo() {
     setFlightDetails('');
-    setSpectatedFlightIcao(null);
+    spectatedFlightIcao = null;
     bellNotifier('The spectated flight was lost!');
   };
 
-  const bellNotifier = (message) => {
+  function bellNotifier(message) {
     const audio = document.getElementById('bell-audio');
+    audio.load();
     audio.play();
     setTimeout(() => {
       alert(message);
-      audio.load();
     }, 0);
   };
 
@@ -135,7 +144,7 @@ function App() {
         <div id="flight-details" dangerouslySetInnerHTML={{ __html: flightDetails }}></div>
       </div>
       <audio id="bell-audio">
-        <source src="./assets/bell.mp3" type="audio/mpeg" />
+        <source src="assets/bell.mp3" type="audio/mpeg" />
       </audio>
     </div>
   );

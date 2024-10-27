@@ -1,4 +1,5 @@
 import socket, threading
+# import raw_decoder
 import sbs_decoder
 
 REMOTE_HOST = "localhost"
@@ -19,6 +20,8 @@ def raw_in_loop(sock):
 
     if msg:
         print(msg, end="")
+        # raw_decoder.parse_raw_message(msg)
+        # flights = raw_decoder.flights
     else:
         print("Connection gone.\n")
         quit = True
@@ -32,7 +35,7 @@ def sbs_in_loop(sock):
 
     if msg:
         print(msg, end="")
-        sbs_decoder.parse_sbs_msg(msg)
+        sbs_decoder.parse_sbs_message(msg)
         flights = sbs_decoder.flights
     else:
         print("Connection gone.\n")
@@ -92,3 +95,6 @@ def stop():
     except:
         pass
     print(flights)
+
+if __name__ == "__main__":
+    operate()

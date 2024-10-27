@@ -73,7 +73,7 @@ def prepare_value(old_value, new_value):
             pass
     return new_value
 
-def parse_sbs_msg(msg):
+def parse_sbs_message(msg):
     msg = str(msg).replace("\n", "").split(",")
     icao = msg[4]
     flight = get_flight(icao)
