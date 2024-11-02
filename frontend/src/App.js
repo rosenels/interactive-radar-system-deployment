@@ -2,13 +2,37 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
+import Bell from './assets/bell.mp3';
 
 let spectatedFlightIcao = null;
 let foundedSpectatedFlight = false;
 
+function useSound(audioSource) {
+  const soundRef = useRef();
+
+  useEffect(() => {
+    soundRef.current = new Audio(audioSource);
+  }, []);
+
+  const playSound = () => {
+    soundRef.current.play();
+  };
+
+  const pauseSound = () => {
+    soundRef.current.pause();
+  };
+
+  return {
+    playSound,
+    pauseSound,
+  };
+};
+
 function App() {
   const mapRef = useRef(null);
   const [flightDetails, setFlightDetails] = useState('');
+
+  const bellSound = useSound(Bell).playSound;
 
   useEffect(() => {
     // Initialize the map when component mounts
@@ -78,8 +102,8 @@ function App() {
 
       try {
         const flightMarker = L.marker([flight.latitude, flight.longitude], {
-          icon: createRotatedIcon(flight.track, iconUrl, iconSize, `<p class="map-label-above-icon">${flight.callsign}</p>`),
-          title: flight.aircraft_code,
+          icon: createRotatedIcon(flight.track, iconUrl, iconSize, `<p class="map-label-above-icon">${(flight.callsign !== null) ? flight.callsign : ""}</p>`),
+          title: flight.callsign,
         }).addTo(map);
 
         // flightMarker.bindPopup(`
@@ -116,8 +140,9 @@ function App() {
   function displayFlightInfo(flight) {
     setFlightDetails(`
       <strong>${flight.icao}</strong><br />
-      Callsign: ${flight.callsign}<br />
-      Altitude: ${flight.altitude} feet
+      Callsign: ${(flight.callsign !== null) ? flight.callsign : "---"}<br />
+      Altitude: ${(flight.altitude !== null) ? flight.altitude : "---"} feet<br />
+      Speed: ${(flight.ground_speed !== null) ? flight.ground_speed : "---"} knots
     `);
   };
 
@@ -128,12 +153,10 @@ function App() {
   };
 
   function bellNotifier(message) {
-    const audio = document.getElementById('bell-audio');
-    audio.load();
-    audio.play();
+    bellSound();
     setTimeout(() => {
       alert(message);
-    }, 0);
+    }, 10);
   };
 
   return (
@@ -143,9 +166,6 @@ function App() {
         <h2>Flight Information</h2>
         <div id="flight-details" dangerouslySetInnerHTML={{ __html: flightDetails }}></div>
       </div>
-      <audio id="bell-audio">
-        <source src="assets/bell.mp3" type="audio/mpeg" />
-      </audio>
     </div>
   );
 }
