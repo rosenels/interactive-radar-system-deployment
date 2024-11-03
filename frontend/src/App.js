@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import './App.css';
-import Bell from './assets/bell.mp3';
+import React, { useEffect, useRef, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "./App.css";
+import Bell from "./assets/bell.mp3";
 
 let spectatedFlightIcao = null;
 let foundedSpectatedFlight = false;
@@ -30,24 +30,24 @@ function useSound(audioSource) {
 
 function App() {
   const mapRef = useRef(null);
-  const [flightDetails, setFlightDetails] = useState('');
+  const [flightDetails, setFlightDetails] = useState("");
 
   const bellSound = useSound(Bell).playSound;
 
   useEffect(() => {
     // Initialize the map when component mounts
-    const map = L.map('map').setView([42.694771, 23.413245], 15);
+    const map = L.map("map").setView([42.694771, 23.413245], 15);
     mapRef.current = map;
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
     }).addTo(map);
 
-    // map.on('zoomend', fetchAndDisplayFlights);
-    // map.on('moveend', fetchAndDisplayFlights);
+    // map.on("zoomend", fetchAndDisplayFlights);
+    // map.on("moveend", fetchAndDisplayFlights);
 
-    map.on('click', () => {
-      setFlightDetails('');
+    map.on("click", () => {
+      setFlightDetails("");
       spectatedFlightIcao = null;
     });
 
@@ -64,10 +64,10 @@ function App() {
   async function fetchAndDisplayFlights() {
     const map = mapRef.current;
 
-    let data = await (await fetch('http://localhost:5000/flights', {
-      // method: 'GET',
+    let data = await (await fetch("http://localhost:5000/flights", {
+      // method: "GET",
       // headers: {
-      //   'Content-Type': 'application/json',
+      //   "Content-Type": "application/json",
       // }
     })).json()
 
@@ -89,13 +89,13 @@ function App() {
         foundedSpectatedFlight = true;
       }
 
-      const isGroundVehicle = flight.callsign === 'GRND';
+      const isGroundVehicle = flight.callsign === "GRND";
       const iconUrl = isGroundVehicle
-        ? 'https://cdn2.iconfinder.com/data/icons/driverless-autonomous-electric-car/319/car-007-512.png'
-        : 'https://cdn3.iconfinder.com/data/icons/remixicon-map/24/plane-line-256.png';
+        ? "https://cdn2.iconfinder.com/data/icons/driverless-autonomous-electric-car/319/car-007-512.png"
+        : "https://cdn3.iconfinder.com/data/icons/remixicon-map/24/plane-line-256.png";
       const iconSize = isGroundVehicle ? [20, 20] : [30, 30];
 
-      // Ensure latitude and longitude are not null or undefined
+      // Ensure latitude and longitude are not null
       if (flight.latitude == null || flight.longitude == null) {
         continue;
       }
@@ -112,7 +112,7 @@ function App() {
         //   Altitude: ${flight.altitude} feet
         // `);
 
-        flightMarker.on('click', () => {
+        flightMarker.on("click", () => {
           displayFlightInfo(flight);
           spectatedFlightIcao = flight.icao;
           foundedSpectatedFlight = true;
@@ -133,23 +133,51 @@ function App() {
       html: `<img src="${iconUrl}" style="transform: rotate(${angle}deg);" width="${iconSize[0]}" height="${iconSize[1]}"/>${htmlAfterIcon}`,
       iconSize: iconSize,
       iconAnchor: [iconSize[0] / 2, iconSize[1] / 2],
-      className: 'custom-icon',
+      className: "custom-icon",
     });
   };
 
-  function displayFlightInfo(flight) {
+  async function displayFlightInfo(flight) {
+    let imageSrc = "";
+    let imagePhotographer = "";
+    let imageLink = "";
+    try {
+      imageSrc = await (await fetch(`https://api.planespotters.net/pub/photos/hex/${flight.icao}`)).json();
+      imageSrc = imageSrc.photos[0];
+      imagePhotographer = "© " + imageSrc.photographer;
+      imageLink = imageSrc.link;
+      if (imageSrc.thumbnail_large !== undefined) {
+        imageSrc = imageSrc.thumbnail_large.src;
+      }
+      else {
+        imageSrc = imageSrc.thumbnail.src;
+      }
+    } catch (error) {
+      imageSrc = "";
+      imagePhotographer = "";
+      imageLink = "";
+      // console.error(error);
+    }
     setFlightDetails(`
-      <strong>${flight.icao}</strong><br />
-      Callsign: ${(flight.callsign !== null) ? flight.callsign : "---"}<br />
-      Altitude: ${(flight.altitude !== null) ? flight.altitude : "---"} feet<br />
-      Speed: ${(flight.ground_speed !== null) ? flight.ground_speed : "---"} knots
+      <div style="height: 100%; margin-right: 10px">
+        <img style="height: 180px" src="${imageSrc}"></img>
+        <br>
+        <a style="margin: 0" target="_blank" href="${imageLink}">${imagePhotographer}</a>
+      </div>
+      <div style="height: 100%">
+        ICAO: <strong>${flight.icao}</strong><br>
+        Callsign: ${(flight.callsign !== null) ? flight.callsign : "---"}<br>
+        Altitude: ${(flight.altitude !== null) ? flight.altitude : "---"} feet<br>
+        Speed: ${(flight.ground_speed !== null) ? flight.ground_speed : "---"} knots<br>
+        Track: ${(flight.track !== null) ? flight.track : "---"}°
+      </div>
     `);
   };
 
   function hideFlightInfo() {
-    setFlightDetails('');
+    setFlightDetails("");
     spectatedFlightIcao = null;
-    bellNotifier('The spectated flight was lost!');
+    bellNotifier("The spectated flight was lost!");
   };
 
   function bellNotifier(message) {
@@ -160,11 +188,11 @@ function App() {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <div id="map" style={{ height: '60%' }}></div>
-      <div id="flight-info" style={{ height: '40%', padding: '10px', borderTop: '1px solid #ccc', overflowY: 'auto' }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      <div id="map" style={{ height: "60%" }}></div>
+      <div id="flight-info" style={{ height: "40%", padding: "10px", borderTop: "1px solid #ccc", overflowY: "auto" }}>
         <h2>Flight Information</h2>
-        <div id="flight-details" dangerouslySetInnerHTML={{ __html: flightDetails }}></div>
+        <div id="flight-details" style={{display: "flex"}} dangerouslySetInnerHTML={{ __html: flightDetails }}></div>
       </div>
     </div>
   );
