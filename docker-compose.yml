@@ -1,0 +1,14 @@
+version: '3.2'
+services:
+  keycloak:
+    image: keycloak/keycloak:24.0.4
+    env_file:
+      - keycloak.env
+    ports:
+      - "8080:8080"
+    command: start-dev
+    volumes:
+      - keycloak-data:/opt
+
+volumes:
+  keycloak-data:
