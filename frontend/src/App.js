@@ -1,8 +1,31 @@
 import React, { useEffect, useRef, useState } from "react";
+import Keycloak from "keycloak-js";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 import Bell from "./assets/bell.mp3";
+
+const backendAddress = "http://localhost:5000";
+
+let kcOptions = {
+  url: 'http://localhost:8080/',
+  realm: 'interactive-radar-system',
+  clientId: 'frontend',
+}
+
+let kc = new Keycloak(kcOptions);
+
+kc.init({
+  onLoad: 'login-required', // Supported values: 'check-sso' (default), 'login-required'
+  checkLoginIframe: true
+}).then((auth) => {
+  if (auth) {
+    console.log(kc.token)
+  }
+  // else {
+  //   // window.location.reload();
+  // }
+});
 
 let spectatedFlightIcao = null;
 let foundedSpectatedFlight = false;
@@ -63,13 +86,20 @@ function App() {
 
   async function fetchAndDisplayFlights() {
     const map = mapRef.current;
+    let data;
 
-    let data = await (await fetch("http://localhost:5000/flights", {
-      // method: "GET",
-      // headers: {
-      //   "Content-Type": "application/json",
-      // }
-    })).json()
+    try {
+      data = await (await fetch(`${backendAddress}/flights`, {
+        // method: "GET",
+        // headers: {
+        //   "Content-Type": "application/json",
+        // }
+      })).json()
+    }
+    catch(error) {
+      // console.error(error);
+      return;
+    }
 
     // Clear existing markers
     map.eachLayer((layer) => {
@@ -188,7 +218,10 @@ function App() {
   };
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{height: "100vh", display: "flex", flexDirection: "column"}}>
+      <div style={{display: "flex", justifyContent: "right", margin: "10px"}}>
+        <button onClick={() => kc.logout()}>Logout</button>
+      </div>
       <div id="map" style={{ height: "60%" }}></div>
       <div id="flight-info" style={{ height: "40%", padding: "10px", borderTop: "1px solid #ccc", overflowY: "auto" }}>
         <h2>Flight Information</h2>
