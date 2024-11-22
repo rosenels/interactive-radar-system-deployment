@@ -1,15 +1,12 @@
-import socket, threading
+from datetime import datetime, timedelta
+import socket, threading, time
 # import raw_decoder
 import sbs_decoder
-
-MODE = "sbs" # "raw-in" or "sbs"
-
-REMOTE_HOST = "localhost"
-PORT = 0 # 0 means the default port for the selected input mode
-RAW_IN_DEFAULT_PORT = 30002
-SBS_DEFAULT_PORT = 30003
+import settings
 
 flights = []
+
+port = settings.PORT
 
 def raw_in_loop(sock):
     global flights, quit
@@ -40,24 +37,24 @@ sock = None
 receiver_thread = None
 
 def operate():
-    global PORT, quit
-    if MODE.upper() == "RAW-IN":
-        if PORT == 0:
-            PORT = RAW_IN_DEFAULT_PORT
+    global port, quit
+    if settings.INPUT_MODE.upper() == "RAW-IN":
+        if port == 0:
+            port = settings.RAW_IN_DEFAULT_PORT
         loop = raw_in_loop
-    elif MODE.upper() == "SBS":
-        if PORT == 0:
-            PORT = SBS_DEFAULT_PORT
+    elif settings.INPUT_MODE.upper() == "SBS":
+        if port == 0:
+            port = settings.SBS_DEFAULT_PORT
         loop = sbs_in_loop
     else:
-        print("Wrong MODE was selected.\n")
+        print("Wrong INPUT_MODE was selected.\n")
         quit = True
 
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((REMOTE_HOST, PORT))
+        sock.connect((settings.REMOTE_HOST, port))
         sock = sock.makefile(mode="r")
-        print("Connected to %s:%d\n" % (REMOTE_HOST, PORT))
+        print("Connected to %s:%d\n" % (settings.REMOTE_HOST, port))
     except:
         # print("Connection refused\n")
         return
@@ -68,7 +65,6 @@ def operate():
 
     except (ConnectionResetError, ConnectionAbortedError):
         print("Connection reset.\n")
-        # quit = True
 
     except KeyboardInterrupt:
         print("^C")
@@ -78,8 +74,14 @@ def operate():
         pass
 
 def keep_operating():
-    global receiver_thread, quit
+    global flights, receiver_thread, quit
     while not quit:
+        updated_flights = []
+        for i in range(len(flights)):
+            if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=settings.MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
+                updated_flights.append(flights[i])
+        flights = updated_flights
+
         if not receiver_thread.is_alive():
             receiver_thread = threading.Thread(target=operate)
             receiver_thread.start()
@@ -90,6 +92,7 @@ def start():
     receiver_thread.start()
     validator_thread = threading.Thread(target=keep_operating)
     validator_thread.start()
+    time.sleep(1) # wait 1 second because in this period it is possible: quit = True
     if quit:
         exit()
 
