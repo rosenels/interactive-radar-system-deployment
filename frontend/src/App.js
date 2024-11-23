@@ -17,15 +17,12 @@ let kc = new Keycloak(kcOptions);
 
 kc.init({
   onLoad: 'login-required', // Supported values: 'check-sso' (default), 'login-required'
-  checkLoginIframe: true
-}).then((auth) => {
-  if (auth) {
-    console.log(kc.token)
-  }
-  // else {
-  //   // window.location.reload();
-  // }
 });
+// .then((auth) => {
+//   if (auth) {
+//     console.log(kc.token)
+//   }
+// });
 
 let spectatedFlightIcao = null;
 let foundedSpectatedFlight = false;
@@ -35,6 +32,7 @@ function useSound(audioSource) {
 
   useEffect(() => {
     soundRef.current = new Audio(audioSource);
+    // eslint-disable-next-line
   }, []);
 
   const playSound = () => {
@@ -66,9 +64,6 @@ function App() {
       attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
     }).addTo(map);
 
-    // map.on("zoomend", fetchAndDisplayFlights);
-    // map.on("moveend", fetchAndDisplayFlights);
-
     map.on("click", () => {
       setFlightDetails("");
       spectatedFlightIcao = null;
@@ -82,6 +77,7 @@ function App() {
       clearInterval(intervalId);
       map.remove();
     };
+    // eslint-disable-next-line
   }, []);
 
   async function fetchAndDisplayFlights() {
@@ -142,6 +138,7 @@ function App() {
         //   Altitude: ${flight.altitude} feet
         // `);
 
+        // eslint-disable-next-line
         flightMarker.on("click", () => {
           displayFlightInfo(flight);
           spectatedFlightIcao = flight.icao;
@@ -171,28 +168,39 @@ function App() {
     let imageSrc = "";
     let imagePhotographer = "";
     let imageLink = "";
+    let imageWidth = 0;
+    let imageHeight = 0;
     try {
       imageSrc = await (await fetch(`https://api.planespotters.net/pub/photos/hex/${flight.icao}`)).json();
       imageSrc = imageSrc.photos[0];
       imagePhotographer = "© " + imageSrc.photographer;
       imageLink = imageSrc.link;
       if (imageSrc.thumbnail_large !== undefined) {
+        imageWidth = imageSrc.thumbnail_large.size.width;
+        imageHeight = imageSrc.thumbnail_large.size.height;
         imageSrc = imageSrc.thumbnail_large.src;
       }
       else {
+        imageWidth = imageSrc.thumbnail.size.width;
+        imageHeight = imageSrc.thumbnail.size.height;
         imageSrc = imageSrc.thumbnail.src;
       }
     } catch (error) {
       imageSrc = "";
       imagePhotographer = "";
       imageLink = "";
+      imageWidth = 0;
+      imageHeight = 0;
       // console.error(error);
     }
+    let imageShowHeight = 180;
     setFlightDetails(`
       <div style="height: 100%; margin-right: 10px">
-        <img style="height: 180px" src="${imageSrc}"></img>
+        <img style="height: ${imageShowHeight}px" src="${imageSrc}"></img>
         <br>
-        <a style="margin: 0" target="_blank" href="${imageLink}">${imagePhotographer}</a>
+        <a style="margin: 0" target="_blank" href="${imageLink}">
+          <p style="margin: 0; max-width: ${(imageWidth * imageShowHeight) / imageHeight}px; word-wrap: break-word">${imagePhotographer}</p>
+        </a>
       </div>
       <div style="height: 100%">
         ICAO: <strong>${flight.icao}</strong><br>
@@ -222,8 +230,8 @@ function App() {
       <div style={{display: "flex", justifyContent: "right", margin: "10px"}}>
         <button onClick={() => kc.logout()}>Logout</button>
       </div>
-      <div id="map" style={{ height: "60%" }}></div>
-      <div id="flight-info" style={{ height: "40%", padding: "10px", borderTop: "1px solid #ccc", overflowY: "auto" }}>
+      <div id="map" style={{ height: "55%" }}></div>
+      <div id="flight-info" style={{ height: "45%", padding: "10px", borderTop: "1px solid #ccc", overflowY: "auto" }}>
         <h2>Flight Information</h2>
         <div id="flight-details" style={{display: "flex"}} dangerouslySetInnerHTML={{ __html: flightDetails }}></div>
       </div>
