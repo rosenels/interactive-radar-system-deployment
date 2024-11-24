@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+// import { Link } from "react-router-dom";
 import Keycloak from "keycloak-js";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -13,16 +14,15 @@ let kcOptions = {
   clientId: 'frontend',
 }
 
+let adminUserRole = "realm-admin";
+let adminUserResource = "realm-management";
+
 let kc = new Keycloak(kcOptions);
 
-kc.init({
+await kc.init({
   onLoad: 'login-required', // Supported values: 'check-sso' (default), 'login-required'
 });
-// .then((auth) => {
-//   if (auth) {
-//     console.log(kc.token)
-//   }
-// });
+// console.log(kc.token);
 
 let spectatedFlightIcao = null;
 let foundedSpectatedFlight = false;
@@ -228,7 +228,13 @@ function App() {
   return (
     <div style={{height: "100vh", display: "flex", flexDirection: "column"}}>
       <div style={{display: "flex", justifyContent: "right", margin: "10px"}}>
-        <button onClick={() => kc.logout()}>Logout</button>
+        {kc.hasResourceRole(adminUserRole, adminUserResource) ? (
+          <div>
+            <a href={`${kcOptions.url}admin/${kcOptions.realm}/console/#/${kcOptions.realm}/users`} target="_blank" rel="noreferrer">Open users settings</a>
+            {/* <Link to="/settings">Open system settings</Link> */}
+          </div>
+        ) : null}
+        <button onClick={() => kc.logout()} style={{marginLeft: "10px"}}>Logout</button>
       </div>
       <div id="map" style={{ height: "55%" }}></div>
       <div id="flight-info" style={{ height: "45%", padding: "10px", borderTop: "1px solid #ccc", overflowY: "auto" }}>
