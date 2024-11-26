@@ -3,35 +3,41 @@ import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Keycloak from "keycloak-js";
 import RadarPage from "./RadarPage";
+import SettingsPage from "./SettingsPage";
 import { Context } from "./Context";
 
-let kcOptions = {
-  url: 'http://localhost:8080/',
-  realm: 'interactive-radar-system',
-  clientId: 'frontend',
+let context = {}
+
+context.backendAddress = process.env.REACT_APP_BACKEND_ADDRESS;
+
+context.adminUserRole = process.env.REACT_APP_ADMIN_USER_ROLE;
+context.adminUserResource = process.env.REACT_APP_ADMIN_USER_RESOURCE;
+
+context.kcOptions = {
+  url: process.env.REACT_APP_KEYCLOAK_URL,
+  realm: process.env.REACT_APP_KEYCLOAK_REALM,
+  clientId: process.env.REACT_APP_KEYCLOAK_CLIENT_ID
 }
 
-let kc = new Keycloak(kcOptions);
+context.kc = new Keycloak(context.kcOptions);
 
-await kc.init({
+await context.kc.init({
   onLoad: 'login-required', // Supported values: 'check-sso' (default), 'login-required'
 });
 // console.log(kc.token);
 
-let contextValue = {
-  "backendAddress": "http://localhost:5000",
-  "kcOptions": kcOptions,
-  "kc": kc,
-  "adminUserRole": "realm-admin",
-  "adminUserResource": "realm-management"
+// Doing this check because after that we need to be sure that the link ends with "/"
+if (String(context.kcOptions.url).charAt(String(context.kcOptions.url).length - 1) !== "/") {
+  context.kcOptions.url += "/";
 }
 
 function App() {
   return (
-    <Context.Provider value={contextValue}>
+    <Context.Provider value={context}>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<RadarPage/>}/>
+          <Route path="/settings" element={<SettingsPage/>}/>
         </Routes>
       </BrowserRouter>
     </Context.Provider>

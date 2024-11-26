@@ -1,4 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import Bell from "./assets/bell.mp3";
@@ -35,7 +36,7 @@ function RadarPage() {
 
   const bellSound = useSound(Bell).playSound;
 
-  let context = useContext(Context);
+  const context = useContext(Context);
 
   useEffect(() => {
     // Initialize the map when component mounts
@@ -212,10 +213,11 @@ function RadarPage() {
       <div style={{display: "flex", justifyContent: "right", margin: "10px"}}>
         {context.kc.hasResourceRole(context.adminUserRole, context.adminUserResource) ? (
           <div>
-            <a href={`${context.kcOptions.url}admin/${context.kcOptions.realm}/console/#/${context.kcOptions.realm}/users`} target="_blank" rel="noreferrer">Open users settings</a>
-            {/* <Link to="/settings">Open system settings</Link> */}
+            <Link to="/settings">Manage system settings</Link>
+            <a href={`${context.kcOptions.url}admin/${context.kcOptions.realm}/console/#/${context.kcOptions.realm}/users`} target="_blank" rel="noreferrer" style={{marginLeft: "10px"}}>Manage system users</a>
           </div>
         ) : null}
+        <a href={`${context.kcOptions.url}realms/${context.kcOptions.realm}/account`} target="_blank" rel="noreferrer" style={{marginLeft: "10px"}}>Manage your account</a>
         <button onClick={() => context.kc.logout()} style={{marginLeft: "10px"}}>Logout</button>
       </div>
       <div id="map" style={{ height: "55%" }}></div>
