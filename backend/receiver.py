@@ -1,12 +1,10 @@
 from datetime import datetime, timedelta
 import socket, threading, time
+from settings import *
 # import raw_decoder
 import sbs_decoder
-import settings
 
 flights = []
-
-port = settings.PORT
 
 def raw_in_loop(sock):
     global flights, quit
@@ -37,14 +35,14 @@ sock = None
 receiver_thread = None
 
 def operate():
-    global port, quit
-    if settings.INPUT_MODE.upper() == "RAW-IN":
-        if port == 0:
-            port = settings.RAW_IN_DEFAULT_PORT
+    global PORT, sock, quit
+    if INPUT_MODE.upper() == "RAW-IN":
+        if PORT == 0:
+            PORT = RAW_IN_DEFAULT_PORT
         loop = raw_in_loop
-    elif settings.INPUT_MODE.upper() == "SBS":
-        if port == 0:
-            port = settings.SBS_DEFAULT_PORT
+    elif INPUT_MODE.upper() == "SBS":
+        if PORT == 0:
+            PORT = SBS_DEFAULT_PORT
         loop = sbs_in_loop
     else:
         print("Wrong INPUT_MODE was selected.\n")
@@ -52,9 +50,9 @@ def operate():
 
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((settings.REMOTE_HOST, port))
+        sock.connect((REMOTE_HOST, PORT))
         sock = sock.makefile(mode="r")
-        print("Connected to %s:%d\n" % (settings.REMOTE_HOST, port))
+        print("Connected to %s:%d\n" % (REMOTE_HOST, PORT))
     except:
         # print("Connection refused\n")
         return
@@ -78,7 +76,7 @@ def keep_operating():
     while not quit:
         updated_flights = []
         for i in range(len(flights)):
-            if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=settings.MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
+            if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
                 updated_flights.append(flights[i])
         flights = updated_flights
 
@@ -99,7 +97,10 @@ def start():
 def stop():
     global receiver_thread, quit
     quit = True
-    receiver_thread.join()
+    try:
+        receiver_thread.join()
+    except:
+        pass
     try:
         sock.close()
     except:
