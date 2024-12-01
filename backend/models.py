@@ -12,5 +12,5 @@ class Configuration(Base):
     value: Mapped[str] = mapped_column(Text)
 
     def __init__(self, key, value):
-        self.key = key
-        self.value = value
+        self.key = str(key)
+        self.value = str(value)

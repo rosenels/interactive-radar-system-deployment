@@ -4,6 +4,8 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from models import *
 
+RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS = 5
+
 MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS = 10
 
 INPUT_MODE = "sbs" # "raw-in" or "sbs"
@@ -21,13 +23,18 @@ db_engine = create_engine(f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{
 Base.metadata.create_all(db_engine) # Creates all tables that don't exist in the database
 
 def load_settings():
-    global MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS, INPUT_MODE, REMOTE_HOST, PORT
+    global RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS, MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS, INPUT_MODE, REMOTE_HOST, PORT
 
     with Session(db_engine) as session:
         saved_settings = list(session.scalars(select(Configuration)))
 
         all_keys = [element.key for element in saved_settings]
         all_values = [element.value for element in saved_settings]
+
+        if "RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS" in all_keys:
+            RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS = all_values[all_keys.index("RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS")]
+        else:
+            session.add(Configuration("RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS", RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS))
 
         if "MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS" in all_keys:
             MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS = float(all_values[all_keys.index("MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS")])
