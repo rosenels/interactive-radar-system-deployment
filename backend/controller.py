@@ -13,21 +13,24 @@ def get_flights():
 
 @app.route("/configuration", methods=["GET"])
 def get_configuration():
-    data = {}
+    data = {
+        "RAW_IN_DEFAULT_PORT": RAW_IN_DEFAULT_PORT,
+        "SBS_DEFAULT_PORT": SBS_DEFAULT_PORT
+    }
 
-    token_details = authentication.validate_token(request.args.get("token"))
+    parsed_token = authentication.parse_token(request.args.get("token"))
 
-    if token_details["active"] == False:
-        return make_response({"message": "Unauthorized"}, 401)
-
-    if os.getenv("KEYCLOAK_ADMIN_USER_ROLE") not in token_details["resource_access"][os.getenv("KEYCLOAK_ADMIN_USER_RESOURCE")]["roles"]:
+    if not authentication.is_admin_user_token(parsed_token):
         return make_response({"message": "Unauthorized"}, 401)
 
     with Session(db_engine) as session:
         saved_configuration = session.scalars(select(Configuration))
 
         for setting in saved_configuration:
-            data[setting.key] = setting.value
+            try:
+                data[setting.key] = float(setting.value)
+            except:
+                data[setting.key] = setting.value
 
     return make_response({"configuration": data}, 200)
 
@@ -35,26 +38,24 @@ def get_configuration():
 def update_configuration():
     data = dict(request.json)
 
-    token_details = authentication.validate_token(data.pop("token"))
+    parsed_token = authentication.parse_token(data.pop("token"))
 
-    if token_details["active"] == False:
-        return make_response({"message": "Unauthorized"}, 401)
-
-    if os.getenv("KEYCLOAK_ADMIN_USER_ROLE") not in token_details["resource_access"][os.getenv("KEYCLOAK_ADMIN_USER_RESOURCE")]["roles"]:
+    if not authentication.is_admin_user_token(parsed_token):
         return make_response({"message": "Unauthorized"}, 401)
 
     with Session(db_engine) as session:
         saved_configuration = session.scalars(select(Configuration))
 
-        for setting in saved_configuration:
+        for setting in saved_configuration: # update existing values for coresponding keys
             if setting.key in data.keys():
-                setting.value = data[setting.key]
-                data.pop(setting.key)
+                setting.value = data.pop(setting.key)
 
-        for key in data.keys():
+        for key in data.keys(): # add new key - value pairs
             session.add(Configuration(key, data[key]))
 
         session.commit()
+
+    load_settings() # update settings variables values from the database
 
     return make_response({"message": "Configuration was updated successfully"}, 200)
 

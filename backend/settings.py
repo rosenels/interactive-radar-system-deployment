@@ -30,21 +30,24 @@ def load_settings():
         all_values = [element.value for element in saved_settings]
 
         if "MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS" in all_keys:
-            MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS = all_values[all_keys.index("MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS")]
+            MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS = float(all_values[all_keys.index("MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS")])
         else:
-            session.add(Configuration("MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS", str(MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS)))
+            session.add(Configuration("MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS", MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS))
+
         if "INPUT_MODE" in all_keys:
             INPUT_MODE = all_values[all_keys.index("INPUT_MODE")]
         else:
-            session.add(Configuration("INPUT_MODE", str(INPUT_MODE)))
+            session.add(Configuration("INPUT_MODE", INPUT_MODE))
+
         if "REMOTE_HOST" in all_keys:
             REMOTE_HOST = all_values[all_keys.index("REMOTE_HOST")]
         else:
-            session.add(Configuration("REMOTE_HOST", str(REMOTE_HOST)))
+            session.add(Configuration("REMOTE_HOST", REMOTE_HOST))
+
         if "PORT" in all_keys:
-            PORT = all_values[all_keys.index("PORT")]
+            PORT = int(all_values[all_keys.index("PORT")])
         else:
-            session.add(Configuration("PORT", str(PORT)))
+            session.add(Configuration("PORT", PORT))
 
         session.commit()
 
