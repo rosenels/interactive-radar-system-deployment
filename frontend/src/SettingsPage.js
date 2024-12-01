@@ -1,9 +1,32 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Context } from "./Context";
 
 function SettingsPage() {
+  document.title = "Settings | Interactive radar system";
+
   const context = useContext(Context);
+
+  const [flightsUpdateInterval, setFlightsUpdateInterval] = useState(0);
+  const [maxTimeInterval, setMaxTimeInterval] = useState(0);
+
+  useEffect(() => {
+    loadConfiguration();
+    // eslint-disable-next-line
+  }, []);
+
+  async function loadConfiguration() {
+    let data;
+    try {
+      data = await (await fetch(`${context.backendAddress}/configuration?token=${context.kc.token}`)).json()
+    }
+    catch(error) {
+      // console.error(error);
+      return;
+    }
+    setFlightsUpdateInterval(data.configuration.RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS);
+    setMaxTimeInterval(data.configuration.MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS);
+  }
 
   return (
     <div className="App">
@@ -20,9 +43,9 @@ function SettingsPage() {
       <h1>System settings</h1>
       <div style={{display: "grid", gridTemplateColumns: "repeat(2, 1fr)", marginTop: "50px"}}>
         <p style={{margin: "0 10px", textAlign: "right"}}>Set flights update time in seconds:</p>
-        <input style={{margin: "0 10px", width: "300px"}}/>
+        <input type="number" value={flightsUpdateInterval} onChange={(e) => setFlightsUpdateInterval(e.target.value)} style={{margin: "0 10px", width: "300px"}}/>
         <p style={{margin: "0 10px", textAlign: "right"}}>Set maximal time interval between two messages before flight considered to lost:</p>
-        <input style={{margin: "0 10px", width: "300px"}}/>
+        <input type="number" value={maxTimeInterval} onChange={(e) => setMaxTimeInterval(e.target.value)} style={{margin: "0 10px", width: "300px"}}/>
       </div>
       <button style={{margin: "40px"}}>Save</button>
     </div>

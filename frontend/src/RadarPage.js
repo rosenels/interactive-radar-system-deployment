@@ -31,12 +31,14 @@ function useSound(audioSource) {
 };
 
 function RadarPage() {
+  document.title = "Interactive radar system";
+
+  const context = useContext(Context);
+
   const mapRef = useRef(null);
   const [flightDetails, setFlightDetails] = useState("");
 
   const bellSound = useSound(Bell).playSound;
-
-  const context = useContext(Context);
 
   useEffect(() => {
     // Initialize the map when component mounts

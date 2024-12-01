@@ -24,7 +24,7 @@ context.kc = new Keycloak(context.kcOptions);
 await context.kc.init({
   onLoad: 'login-required', // Supported values: 'check-sso' (default), 'login-required'
 });
-// console.log(kc.token);
+// console.log(context.kc.token);
 
 // Doing this check because after that we need to be sure that the link ends with "/"
 if (String(context.kcOptions.url).charAt(String(context.kcOptions.url).length - 1) !== "/") {
