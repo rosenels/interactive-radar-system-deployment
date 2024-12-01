@@ -37,10 +37,13 @@ function RadarPage() {
 
   const mapRef = useRef(null);
   const [flightDetails, setFlightDetails] = useState("");
+  const [flightsUpdateIntervalInSeconds, setFlightsUpdateIntervalInSeconds] = useState(5);
 
-  const bellSound = useSound(Bell).playSound;
+  const playBellSound = useSound(Bell).playSound;
 
   useEffect(() => {
+    loadConfiguration();
+
     // Initialize the map when component mounts
     const map = L.map("map").setView([42.694771, 23.413245], 15);
     mapRef.current = map;
@@ -56,26 +59,33 @@ function RadarPage() {
 
     fetchAndDisplayFlights();
 
-    const intervalId = setInterval(fetchAndDisplayFlights, 5000);
+    const intervalId = setInterval(fetchAndDisplayFlights, flightsUpdateIntervalInSeconds * 1000);
 
     return () => {
       clearInterval(intervalId);
       map.remove();
     };
     // eslint-disable-next-line
-  }, []);
+  }, [flightsUpdateIntervalInSeconds]);
+
+  async function loadConfiguration() {
+    let data;
+    try {
+      data = await (await fetch(`${context.backendAddress}/configuration?token=${context.kc.token}`)).json();
+    }
+    catch(error) {
+      // console.error(error);
+      return;
+    }
+    setFlightsUpdateIntervalInSeconds(data.configuration.RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS);
+  }
 
   async function fetchAndDisplayFlights() {
     const map = mapRef.current;
     let data;
 
     try {
-      data = await (await fetch(`${context.backendAddress}/flights`, {
-        // method: "GET",
-        // headers: {
-        //   "Content-Type": "application/json",
-        // }
-      })).json()
+      data = await (await fetch(`${context.backendAddress}/flights`)).json();
     }
     catch(error) {
       // console.error(error);
@@ -204,7 +214,7 @@ function RadarPage() {
   };
 
   function bellNotifier(message) {
-    bellSound();
+    playBellSound();
     setTimeout(() => {
       alert(message);
     }, 10);

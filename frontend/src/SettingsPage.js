@@ -7,8 +7,8 @@ function SettingsPage() {
 
   const context = useContext(Context);
 
-  const [flightsUpdateInterval, setFlightsUpdateInterval] = useState(0);
-  const [maxTimeInterval, setMaxTimeInterval] = useState(0);
+  const [flightsUpdateInterval, setFlightsUpdateInterval] = useState();
+  const [maxTimeInterval, setMaxTimeInterval] = useState();
 
   useEffect(() => {
     loadConfiguration();
@@ -18,7 +18,7 @@ function SettingsPage() {
   async function loadConfiguration() {
     let data;
     try {
-      data = await (await fetch(`${context.backendAddress}/configuration?token=${context.kc.token}`)).json()
+      data = await (await fetch(`${context.backendAddress}/configuration?token=${context.kc.token}`)).json();
     }
     catch(error) {
       // console.error(error);
@@ -26,6 +26,26 @@ function SettingsPage() {
     }
     setFlightsUpdateInterval(data.configuration.RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS);
     setMaxTimeInterval(data.configuration.MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS);
+  }
+
+  async function saveConfiguration() {
+    try {
+      await fetch(`${context.backendAddress}/configuration`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "token": context.kc.token,
+          "RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS": flightsUpdateInterval,
+          "MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS": maxTimeInterval
+        })
+      });
+    }
+    catch(error) {
+      // console.error(error);
+      return;
+    }
   }
 
   return (
@@ -47,7 +67,7 @@ function SettingsPage() {
         <p style={{margin: "0 10px", textAlign: "right"}}>Set maximal time interval between two messages before flight considered to lost:</p>
         <input type="number" value={maxTimeInterval} onChange={(e) => setMaxTimeInterval(e.target.value)} style={{margin: "0 10px", width: "300px"}}/>
       </div>
-      <button style={{margin: "40px"}}>Save</button>
+      <button onClick={saveConfiguration} style={{margin: "40px"}}>Save</button>
     </div>
   );
 }
