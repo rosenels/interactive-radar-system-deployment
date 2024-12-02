@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import socket, threading, time
 from settings import *
+from models import *
 # import raw_decoder
 import sbs_decoder
 
@@ -73,16 +74,37 @@ def operate():
 
 def keep_operating():
     global flights, receiver_thread, quit
-    while not quit:
-        updated_flights = []
-        for i in range(len(flights)):
-            if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
-                updated_flights.append(flights[i])
-        flights = updated_flights
 
-        if not receiver_thread.is_alive():
-            receiver_thread = threading.Thread(target=operate)
-            receiver_thread.start()
+    with Session(db_engine) as session:
+        while not quit:
+            atc_instructions_in_db = list(session.scalars(select(InstructionsFromATC).order_by(InstructionsFromATC.timestamp.desc())))
+            flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS))))
+            updated_flights = []
+            for i in range(len(flights)):
+                if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
+                    updated_flights.append(flights[i])
+
+                    temp_flight = FlightInformation.from_flight_dict(flights[i])
+
+                    if temp_flight not in flights_in_db:
+                        instructions_id = None
+                        for instruction in atc_instructions_in_db:
+                            for flight in instruction.flight_info:
+                                if flight.icao == temp_flight.icao:
+                                    instructions_id = instruction.id
+                                    break
+                            if instructions_id is not None:
+                                break
+                        temp_flight.atc_instructions_id = instructions_id
+
+                        session.add(temp_flight)
+
+            flights = updated_flights
+            session.commit()
+
+            if not receiver_thread.is_alive():
+                receiver_thread = threading.Thread(target=operate)
+                receiver_thread.start()
 
 def start():
     global receiver_thread, quit
@@ -99,9 +121,6 @@ def stop():
     quit = True
     try:
         receiver_thread.join()
-    except:
-        pass
-    try:
         sock.close()
     except:
         pass

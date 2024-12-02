@@ -32,7 +32,7 @@ def load_settings():
         all_values = [element.value for element in saved_settings]
 
         if "RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS" in all_keys:
-            RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS = all_values[all_keys.index("RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS")]
+            RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS = float(all_values[all_keys.index("RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS")])
         else:
             session.add(Configuration("RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS", RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS))
 

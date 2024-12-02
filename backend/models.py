@@ -1,7 +1,7 @@
-from typing import List
 from sqlalchemy import Text, Integer, Float, DateTime, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-# from datetime import datetime
+from datetime import datetime
+from typing import List
 
 class Base(DeclarativeBase):
     pass
@@ -59,22 +59,81 @@ class FlightInformation(Base):
         self.timestamp = timestamp
         self.atc_instructions_id = atc_instructions_id
 
+    @classmethod
+    def from_flight_dict(self, flight_dict, atc_instructions_id = None):
+        return self(
+            icao = flight_dict["icao"],
+            session_id = flight_dict["session_id"],
+            aircraft_id = flight_dict["aircraft_id"],
+            flight_id = flight_dict["flight_id"],
+            callsign = flight_dict["callsign"],
+            altitude = flight_dict["altitude"],
+            ground_speed = flight_dict["ground_speed"],
+            track = flight_dict["track"],
+            latitude = flight_dict["latitude"],
+            longitude = flight_dict["longitude"],
+            vertical_rate = flight_dict["vertical_rate"],
+            squawk = flight_dict["squawk"],
+            alert_squawk_change = flight_dict["alert_squawk_change"],
+            emergency_code = flight_dict["emergency_code"],
+            spi_ident = flight_dict["spi_ident"],
+            on_ground = flight_dict["on_ground"],
+            timestamp = flight_dict["last_datetime"],
+            atc_instructions_id = atc_instructions_id
+        )
+
     def __eq__(self, other):
         if isinstance(other, FlightInformation):
-            return self.icao == other.icao and self.timestamp == other.timestamp
+            if self.icao != other.icao:
+                return False
+            if self.session_id != other.session_id:
+                return False
+            if self.aircraft_id != other.aircraft_id:
+                return False
+            if self.flight_id != other.flight_id:
+                return False
+            if self.callsign != other.callsign:
+                return False
+            if self.altitude != other.altitude:
+                return False
+            if self.ground_speed != other.ground_speed:
+                return False
+            if self.track != other.track:
+                return False
+            if self.latitude != other.latitude:
+                return False
+            if self.longitude != other.longitude:
+                return False
+            if self.vertical_rate != other.vertical_rate:
+                return False
+            if self.squawk != other.squawk:
+                return False
+            if self.alert_squawk_change != other.alert_squawk_change:
+                return False
+            if self.emergency_code != other.emergency_code:
+                return False
+            if self.spi_ident != other.spi_ident:
+                return False
+            if self.on_ground != other.on_ground:
+                return False
+            return True
         return False
 
 class InstructionsFromATC(Base):
     __tablename__ = "atc_instructions"
     id: Mapped[int] = mapped_column(primary_key=True)
+    atc_user_id: Mapped[str] = mapped_column(Text)
     altitude: Mapped[int] = mapped_column(Integer, nullable=True)
     ground_speed: Mapped[int] = mapped_column(Integer, nullable=True)
     track: Mapped[int] = mapped_column(Integer, nullable=True)
     vertical_rate: Mapped[int] = mapped_column(Integer, nullable=True)
     flight_info: Mapped[List["FlightInformation"]] = relationship(back_populates="atc_instructions")
+    timestamp: Mapped[DateTime] = mapped_column(DateTime)
 
-    def __init__(self, altitude, ground_speed, track, vertical_rate):
+    def __init__(self, atc_user_id, altitude, ground_speed, track, vertical_rate):
+        self.atc_user_id = atc_user_id
         self.altitude = altitude
         self.ground_speed = ground_speed
         self.track = track
         self.vertical_rate = vertical_rate
+        self.timestamp = datetime.now()
