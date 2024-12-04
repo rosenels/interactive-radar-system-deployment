@@ -77,16 +77,25 @@ def keep_operating():
 
     with Session(db_engine) as session:
         while not quit:
+            time.sleep(RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS / 2)
+
             atc_instructions_in_db = list(session.scalars(select(InstructionsFromATC).order_by(InstructionsFromATC.timestamp.desc())))
             flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS))))
             updated_flights = []
+
             for i in range(len(flights)):
                 if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
                     updated_flights.append(flights[i])
 
                     temp_flight = FlightInformation.from_flight_dict(flights[i])
 
-                    if temp_flight not in flights_in_db:
+                    flight_not_found = True
+                    for flight in flights_in_db:
+                        if temp_flight == flight:
+                            flight_not_found = False
+                            break
+
+                    if flight_not_found:
                         instructions_id = None
                         for instruction in atc_instructions_in_db:
                             for flight in instruction.flight_info:
