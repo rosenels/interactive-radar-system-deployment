@@ -11,6 +11,36 @@ CORS(app)
 def get_flights():
     return make_response({"flights": receiver.flights}, 200)
 
+@app.route("/flights/<string:icao>", methods=["POST"])
+def control_flight(icao):
+    data = dict(request.json)
+
+    parsed_token = authentication.parse_token(data.get("token"))
+
+    if not authentication.is_token_active(parsed_token):
+        return make_response({"message": "Unauthorized"}, 401)
+
+    with Session(db_engine) as session:
+        flight_info = session.scalar(select(FlightInformation).where(FlightInformation.icao == icao).order_by(FlightInformation.timestamp.desc()))
+
+        if flight_info is None:
+            return make_response({"message": "There is no flight with this ICAO address"}, 400)
+
+        else:
+            new_instructions = InstructionsFromATC(
+                atc_user_id=authentication.get_user_id(parsed_token),
+                altitude=data.get("altitude", None),
+                ground_speed=data.get("ground_speed", None),
+                track=data.get("track", None),
+                vertical_rate=data.get("vertical_rate", None)
+            )
+            new_instructions.flight_info.append(flight_info)
+            session.add(new_instructions)
+
+            session.commit()
+
+    return make_response({"message": "Instructions were applied successfully"}, 200)
+
 @app.route("/configuration", methods=["GET"])
 def get_configuration():
     data = {

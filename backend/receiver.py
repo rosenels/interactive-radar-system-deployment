@@ -79,8 +79,8 @@ def keep_operating():
         while not quit:
             time.sleep(RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS / 2)
 
-            atc_instructions_in_db = list(session.scalars(select(InstructionsFromATC).order_by(InstructionsFromATC.timestamp.desc())))
-            flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS))))
+            atc_instructions_in_db = list(session.scalars(select(InstructionsFromATC).where(InstructionsFromATC.timestamp > datetime.now() - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS)).order_by(InstructionsFromATC.timestamp.desc())))
+            flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=0.8 * MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS))))
             updated_flights = []
 
             for i in range(len(flights)):
@@ -101,6 +101,7 @@ def keep_operating():
                             for flight in instruction.flight_info:
                                 if flight.icao == temp_flight.icao:
                                     instructions_id = instruction.id
+                                    instruction.timestamp = datetime.now()
                                     break
                             if instructions_id is not None:
                                 break

@@ -8,6 +8,8 @@ RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS = 5
 
 MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS = 10
 
+INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS = 1800 # 30 minutes
+
 INPUT_MODE = "sbs" # "raw-in" or "sbs"
 
 REMOTE_HOST = "localhost"
@@ -23,7 +25,7 @@ db_engine = create_engine(f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{
 Base.metadata.create_all(db_engine) # Creates all tables that don't exist in the database
 
 def load_settings():
-    global RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS, MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS, INPUT_MODE, REMOTE_HOST, PORT
+    global RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS, MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS, INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS, INPUT_MODE, REMOTE_HOST, PORT
 
     with Session(db_engine) as session:
         saved_settings = list(session.scalars(select(Configuration)))
@@ -40,6 +42,11 @@ def load_settings():
             MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS = float(all_values[all_keys.index("MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS")])
         else:
             session.add(Configuration("MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS", MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS))
+
+        if "INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS" in all_keys:
+            INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS = float(all_values[all_keys.index("INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS")])
+        else:
+            session.add(Configuration("INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS", INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS))
 
         if "INPUT_MODE" in all_keys:
             INPUT_MODE = all_values[all_keys.index("INPUT_MODE")]
