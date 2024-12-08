@@ -36,14 +36,14 @@ sock = None
 receiver_thread = None
 
 def operate():
-    global PORT, sock, quit
-    if INPUT_MODE.upper() == "RAW-IN":
-        if PORT == 0:
-            PORT = RAW_IN_DEFAULT_PORT
+    global FLIGHT_DATA_PORT, sock, quit
+    if FLIGHT_DATA_INPUT_MODE.upper() == "RAW-IN":
+        if FLIGHT_DATA_PORT == 0:
+            FLIGHT_DATA_PORT = RAW_IN_DEFAULT_PORT
         loop = raw_in_loop
-    elif INPUT_MODE.upper() == "SBS":
-        if PORT == 0:
-            PORT = SBS_DEFAULT_PORT
+    elif FLIGHT_DATA_INPUT_MODE.upper() == "SBS":
+        if FLIGHT_DATA_PORT == 0:
+            FLIGHT_DATA_PORT = SBS_DEFAULT_PORT
         loop = sbs_in_loop
     else:
         print("Wrong INPUT_MODE was selected.\n")
@@ -51,9 +51,9 @@ def operate():
 
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((REMOTE_HOST, PORT))
+        sock.connect((FLIGHT_DATA_HOST, FLIGHT_DATA_PORT))
         sock = sock.makefile(mode="r")
-        print("Connected to %s:%d\n" % (REMOTE_HOST, PORT))
+        print("Connected to %s:%d\n" % (FLIGHT_DATA_HOST, FLIGHT_DATA_PORT))
     except:
         # print("Connection refused\n")
         return
@@ -69,8 +69,8 @@ def operate():
         print("^C")
         quit = True
 
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"{str(type(e))}: {str(e)}")
 
 def keep_operating():
     global flights, receiver_thread, quit

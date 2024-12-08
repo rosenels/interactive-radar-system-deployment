@@ -79,7 +79,10 @@ def parse_sbs_message(msg):
     flight["session_id"] = prepare_value(flight["session_id"], msg[2])
     flight["aircraft_id"] = prepare_value(flight["aircraft_id"], msg[3])
     flight["flight_id"] = prepare_value(flight["flight_id"], msg[5])
-    flight["last_datetime"] = prepare_value(flight["last_datetime"], parser.parse(f"{msg[6]} {msg[7]}"))
+    try:
+        flight["last_datetime"] = prepare_value(flight["last_datetime"], parser.parse(f"{msg[6]} {msg[7]}"))
+    except:
+        flight["last_datetime"] = prepare_value(flight["last_datetime"], datetime.now())
     flight["callsign"] = prepare_value(flight["callsign"], msg[8])
     flight["altitude"] = prepare_value(flight["altitude"], msg[9])
     flight["ground_speed"] = prepare_value(flight["ground_speed"], msg[10])

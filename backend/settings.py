@@ -10,10 +10,11 @@ MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS = 10
 
 INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS = 1800 # 30 minutes
 
-INPUT_MODE = "sbs" # "raw-in" or "sbs"
+load_dotenv()
 
-REMOTE_HOST = "localhost"
-PORT = 0 # 0 means the default port for the selected input mode
+FLIGHT_DATA_INPUT_MODE = os.getenv("FLIGHT_DATA_INPUT_MODE") # "raw-in" or "sbs"
+FLIGHT_DATA_HOST = os.getenv("FLIGHT_DATA_HOST")
+FLIGHT_DATA_PORT = os.getenv("FLIGHT_DATA_PORT") # 0 means the default port for the selected input mode
 
 RAW_IN_DEFAULT_PORT = 30002
 SBS_DEFAULT_PORT = 30003
@@ -25,7 +26,7 @@ db_engine = create_engine(f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{
 Base.metadata.create_all(db_engine) # Creates all tables that don't exist in the database
 
 def load_settings():
-    global RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS, MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS, INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS, INPUT_MODE, REMOTE_HOST, PORT
+    global RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS, MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS, INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS, FLIGHT_DATA_INPUT_MODE, FLIGHT_DATA_HOST, FLIGHT_DATA_PORT
 
     with Session(db_engine) as session:
         saved_settings = list(session.scalars(select(Configuration)))
@@ -48,20 +49,20 @@ def load_settings():
         else:
             session.add(Configuration("INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS", INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS))
 
-        if "INPUT_MODE" in all_keys:
-            INPUT_MODE = all_values[all_keys.index("INPUT_MODE")]
+        if "FLIGHT_DATA_INPUT_MODE" in all_keys:
+            FLIGHT_DATA_INPUT_MODE = all_values[all_keys.index("FLIGHT_DATA_INPUT_MODE")]
         else:
-            session.add(Configuration("INPUT_MODE", INPUT_MODE))
+            session.add(Configuration("FLIGHT_DATA_INPUT_MODE", FLIGHT_DATA_INPUT_MODE))
 
-        if "REMOTE_HOST" in all_keys:
-            REMOTE_HOST = all_values[all_keys.index("REMOTE_HOST")]
+        if "FLIGHT_DATA_HOST" in all_keys:
+            FLIGHT_DATA_HOST = all_values[all_keys.index("FLIGHT_DATA_HOST")]
         else:
-            session.add(Configuration("REMOTE_HOST", REMOTE_HOST))
+            session.add(Configuration("FLIGHT_DATA_HOST", FLIGHT_DATA_HOST))
 
-        if "PORT" in all_keys:
-            PORT = int(all_values[all_keys.index("PORT")])
+        if "FLIGHT_DATA_PORT" in all_keys:
+            FLIGHT_DATA_PORT = int(all_values[all_keys.index("FLIGHT_DATA_PORT")])
         else:
-            session.add(Configuration("PORT", PORT))
+            session.add(Configuration("FLIGHT_DATA_PORT", FLIGHT_DATA_PORT))
 
         session.commit()
 

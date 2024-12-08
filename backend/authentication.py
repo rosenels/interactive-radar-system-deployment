@@ -1,8 +1,5 @@
 import os
-from dotenv import load_dotenv
 import requests
-
-load_dotenv()
 
 KEYCLOAK_URL = os.getenv("KEYCLOAK_URL")
 KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM")
