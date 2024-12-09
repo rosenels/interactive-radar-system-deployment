@@ -61,6 +61,7 @@ class FlightInformation(Base):
 
     @classmethod
     def from_flight_dict(self, flight_dict, atc_instructions_id = None):
+        assert isinstance(flight_dict, dict)
         return self(
             icao = flight_dict["icao"],
             session_id = flight_dict["session_id"],
@@ -80,6 +81,30 @@ class FlightInformation(Base):
             on_ground = flight_dict["on_ground"],
             timestamp = flight_dict["last_datetime"],
             atc_instructions_id = atc_instructions_id
+        )
+
+    @classmethod
+    def from_other_flight_info(self, other_flight_info):
+        assert isinstance(other_flight_info, FlightInformation)
+        return self(
+            icao = other_flight_info.icao,
+            session_id = other_flight_info.session_id,
+            aircraft_id = other_flight_info.aircraft_id,
+            flight_id = other_flight_info.flight_id,
+            callsign = other_flight_info.callsign,
+            altitude = other_flight_info.altitude,
+            ground_speed = other_flight_info.ground_speed,
+            track = other_flight_info.track,
+            latitude = other_flight_info.latitude,
+            longitude = other_flight_info.longitude,
+            vertical_rate = other_flight_info.vertical_rate,
+            squawk = other_flight_info.squawk,
+            alert_squawk_change = other_flight_info.alert_squawk_change,
+            emergency_code = other_flight_info.emergency_code,
+            spi_ident = other_flight_info.spi_ident,
+            on_ground = other_flight_info.on_ground,
+            timestamp = other_flight_info.timestamp,
+            atc_instructions_id = other_flight_info.atc_instructions_id
         )
 
     def __eq__(self, other):

@@ -73,7 +73,7 @@ def prepare_value(old_value, new_value):
     return new_value
 
 def parse_sbs_message(msg):
-    msg = str(msg).replace("\n", "").split(",")
+    msg = str(msg).replace("\n", "").replace(" ", "").split(",")
     icao = msg[4]
     flight = get_flight(icao)
     flight["session_id"] = prepare_value(flight["session_id"], msg[2])
@@ -83,16 +83,16 @@ def parse_sbs_message(msg):
         flight["last_datetime"] = prepare_value(flight["last_datetime"], parser.parse(f"{msg[6]} {msg[7]}"))
     except:
         flight["last_datetime"] = prepare_value(flight["last_datetime"], datetime.now())
-    flight["callsign"] = prepare_value(flight["callsign"], msg[8])
-    flight["altitude"] = prepare_value(flight["altitude"], msg[9])
-    flight["ground_speed"] = prepare_value(flight["ground_speed"], msg[10])
-    flight["track"] = prepare_value(flight["track"], msg[11])
-    flight["latitude"] = prepare_value(flight["latitude"], msg[12])
-    flight["longitude"] = prepare_value(flight["longitude"], msg[13])
-    flight["vertical_rate"] = prepare_value(flight["vertical_rate"], msg[14])
-    flight["squawk"] = prepare_value(flight["squawk"], msg[15])
-    flight["alert_squawk_change"] = prepare_value(flight["alert_squawk_change"], msg[16])
-    flight["emergency_code"] = prepare_value(flight["emergency_code"], msg[17])
-    flight["spi_ident"] = prepare_value(flight["spi_ident"], msg[18])
-    flight["on_ground"] = prepare_value(flight["on_ground"], msg[19])
+    flight["callsign"] = prepare_value(flight["callsign"], msg[10])
+    flight["altitude"] = prepare_value(flight["altitude"], msg[11])
+    flight["ground_speed"] = prepare_value(flight["ground_speed"], msg[12])
+    flight["track"] = prepare_value(flight["track"], msg[13])
+    flight["latitude"] = prepare_value(flight["latitude"], msg[14])
+    flight["longitude"] = prepare_value(flight["longitude"], msg[15])
+    flight["vertical_rate"] = prepare_value(flight["vertical_rate"], msg[16])
+    flight["squawk"] = prepare_value(flight["squawk"], msg[17])
+    flight["alert_squawk_change"] = prepare_value(flight["alert_squawk_change"], msg[18])
+    flight["emergency_code"] = prepare_value(flight["emergency_code"], msg[19])
+    flight["spi_ident"] = prepare_value(flight["spi_ident"], msg[20])
+    flight["on_ground"] = prepare_value(flight["on_ground"], msg[21])
     update_flights(flight)

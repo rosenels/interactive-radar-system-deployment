@@ -1,5 +1,6 @@
 from flask import Flask, request, make_response
 from flask_cors import CORS
+from datetime import datetime, timedelta
 from settings import *
 import authentication
 import receiver
@@ -21,9 +22,9 @@ def control_flight(icao):
         return make_response({"message": "Unauthorized"}, 401)
 
     with Session(db_engine) as session:
-        flight_info = session.scalar(select(FlightInformation).where(FlightInformation.icao == icao).order_by(FlightInformation.timestamp.desc()))
+        flight = session.scalar(select(FlightInformation).where(FlightInformation.icao == icao).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS)).order_by(FlightInformation.timestamp.desc()))
 
-        if flight_info is None:
+        if flight is None:
             return make_response({"message": "There is no flight with this ICAO address"}, 400)
 
         else:
@@ -34,8 +35,11 @@ def control_flight(icao):
                 track=data.get("track", None),
                 vertical_rate=data.get("vertical_rate", None)
             )
-            new_instructions.flight_info.append(flight_info)
             session.add(new_instructions)
+
+            flight = FlightInformation.from_other_flight_info(flight)
+            flight.atc_instructions_id = new_instructions.id
+            session.add(flight)
 
             session.commit()
 
