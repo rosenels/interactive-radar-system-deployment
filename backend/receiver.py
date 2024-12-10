@@ -120,6 +120,7 @@ def keep_operating():
 
 def start():
     global receiver_thread, quit
+    quit = False
     receiver_thread = threading.Thread(target=operate)
     receiver_thread.start()
     validator_thread = threading.Thread(target=keep_operating)
@@ -137,6 +138,10 @@ def stop():
     except:
         pass
     # print(flights)
+
+def restart():
+    stop()
+    start()
 
 if __name__ == "__main__":
     operate()

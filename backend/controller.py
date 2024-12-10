@@ -1,6 +1,7 @@
 from flask import Flask, request, make_response
 from flask_cors import CORS
 from datetime import datetime, timedelta
+import threading
 from settings import *
 import authentication
 import receiver
@@ -27,21 +28,26 @@ def control_flight(icao):
         if flight is None:
             return make_response({"message": "There is no flight with this ICAO address"}, 400)
 
-        else:
-            new_instructions = InstructionsFromATC(
-                atc_user_id=authentication.get_user_id(parsed_token),
-                altitude=data.get("altitude", None),
-                ground_speed=data.get("ground_speed", None),
-                track=data.get("track", None),
-                vertical_rate=data.get("vertical_rate", None)
-            )
-            session.add(new_instructions)
+        atc_user_id = authentication.get_user_id(parsed_token)
 
-            flight = FlightInformation.from_other_flight_info(flight)
-            flight.atc_instructions_id = new_instructions.id
-            session.add(flight)
+        if flight.atc_instructions_id != None:
+            if atc_user_id != flight.atc_instructions.atc_user_id:
+                return make_response({"message": "This flight is controlled by another ATC now"}, 403)
 
-            session.commit()
+        new_instructions = InstructionsFromATC(
+            atc_user_id=atc_user_id,
+            altitude=data.get("altitude", None),
+            ground_speed=data.get("ground_speed", None),
+            track=data.get("track", None),
+            vertical_rate=data.get("vertical_rate", None)
+        )
+        session.add(new_instructions)
+
+        flight = FlightInformation.from_other_flight_info(flight)
+        flight.atc_instructions_id = new_instructions.id
+        session.add(flight)
+
+        session.commit()
 
     return make_response({"message": "Instructions were applied successfully"}, 200)
 
@@ -90,6 +96,7 @@ def update_configuration():
         session.commit()
 
     load_settings() # update settings variables values from the database
+    threading.Thread(target=receiver.restart).start() # restart the receiver (with the new settings) in new thread
 
     return make_response({"message": "Configuration was updated successfully"}, 200)
 
