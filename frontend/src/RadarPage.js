@@ -59,7 +59,10 @@ function RadarPage() {
 
     fetchAndDisplayFlights();
 
-    const intervalId = setInterval(fetchAndDisplayFlights, flightsUpdateIntervalInSeconds * 1000);
+    const intervalId = setInterval(() => {
+      fetchAndDisplayFlights();
+      context.kc.updateToken();
+    }, flightsUpdateIntervalInSeconds * 1000);
 
     return () => {
       clearInterval(intervalId);
@@ -220,6 +223,22 @@ function RadarPage() {
     }, 10);
   };
 
+  async function startControllingFlight() {
+    try {
+      await fetch(`${context.backendAddress}/instructions/${spectatedFlightIcao}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "token": context.kc.token
+        })
+      });
+    } catch (error) {
+      // console.error(error);
+    }
+  }
+
   return (
     <div style={{height: "100vh", display: "flex", flexDirection: "column"}}>
       <div style={{display: "flex", justifyContent: "right", margin: "10px"}}>
@@ -232,10 +251,13 @@ function RadarPage() {
         <a href={`${context.kcOptions.url}realms/${context.kcOptions.realm}/account`} target="_blank" rel="noreferrer" style={{marginLeft: "10px"}}>Manage your account</a>
         <button onClick={() => context.kc.logout()} style={{marginLeft: "10px"}}>Logout</button>
       </div>
-      <div id="map" style={{ height: "55%" }}></div>
-      <div id="flight-info" style={{ height: "45%", padding: "10px", borderTop: "1px solid #ccc", overflowY: "auto" }}>
-        <h2>Flight Information</h2>
+      <div id="map" style={{height: "55%"}}></div>
+      <h2 style={{margin: "10px", paddingTop: "5px", borderTop: "1px solid #ccc"}}>Flight Information</h2>
+      <div id="flight-info" style={{display: "flex", height: "45%", padding: "10px", border: "0", overflowY: "auto"}}>
         <div id="flight-details" style={{display: "flex"}} dangerouslySetInnerHTML={{ __html: flightDetails }}></div>
+        <div id="flight-controls" style={{display: "flex", marginLeft: "10px"}}>
+          <button onClick={startControllingFlight} style={{height: "20px"}}>Control this flight</button>
+        </div>
       </div>
     </div>
   );

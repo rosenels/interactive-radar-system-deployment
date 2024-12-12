@@ -12,6 +12,14 @@ function SettingsPage() {
 
   useEffect(() => {
     loadConfiguration();
+
+    const intervalId = setInterval(() => {
+      context.kc.updateToken();
+    }, 60000); // once at every minute
+
+    return () => {
+      clearInterval(intervalId);
+    };
     // eslint-disable-next-line
   }, []);
 
