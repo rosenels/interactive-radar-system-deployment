@@ -21,7 +21,8 @@ new_flight = {
     "alert_squawk_change": None,
     "emergency_code": None,
     "spi_ident": None,
-    "on_ground": None
+    "on_ground": None,
+    "instructions": None
 }
 
 def get_flight(icao):

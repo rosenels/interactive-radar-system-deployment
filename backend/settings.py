@@ -21,7 +21,7 @@ SBS_DEFAULT_PORT = 30003
 
 load_dotenv("database.env")
 
-db_engine = create_engine(f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@localhost:5432/{os.getenv('POSTGRES_DB')}")
+db_engine = create_engine(f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('POSTGRES_DB')}")
 
 Base.metadata.create_all(db_engine) # Creates all tables that don't exist in the database
 

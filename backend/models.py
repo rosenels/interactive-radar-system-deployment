@@ -60,8 +60,13 @@ class FlightInformation(Base):
         self.atc_instructions_id = atc_instructions_id
 
     @classmethod
-    def from_flight_dict(self, flight_dict, atc_instructions_id = None):
+    def from_flight_dict(self, flight_dict):
         assert isinstance(flight_dict, dict)
+
+        instructions_id = None
+        if isinstance(flight_dict["instructions"], dict):
+            instructions_id = flight_dict["instructions"].get("id", None)
+
         return self(
             icao = flight_dict["icao"],
             session_id = flight_dict["session_id"],
@@ -80,7 +85,7 @@ class FlightInformation(Base):
             spi_ident = flight_dict["spi_ident"],
             on_ground = flight_dict["on_ground"],
             timestamp = flight_dict["last_datetime"],
-            atc_instructions_id = atc_instructions_id
+            atc_instructions_id = instructions_id
         )
 
     @classmethod
@@ -140,6 +145,8 @@ class FlightInformation(Base):
             if self.spi_ident != other.spi_ident:
                 return False
             if self.on_ground != other.on_ground:
+                return False
+            if self.atc_instructions_id != other.atc_instructions_id:
                 return False
             return True
         return False

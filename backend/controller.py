@@ -13,8 +13,8 @@ CORS(app)
 def get_flights():
     return make_response({"flights": receiver.flights}, 200)
 
-@app.route("/flights/<string:icao>", methods=["POST"])
-def control_flight(icao):
+@app.route("/instructions/<string:flight_icao>", methods=["POST"])
+def control_flight(flight_icao):
     data = dict(request.json)
 
     parsed_token = authentication.parse_token(data.get("token"))
@@ -23,10 +23,10 @@ def control_flight(icao):
         return make_response({"message": "Unauthorized"}, 401)
 
     with Session(db_engine) as session:
-        flight = session.scalar(select(FlightInformation).where(FlightInformation.icao == icao).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS)).order_by(FlightInformation.timestamp.desc()))
+        flight = session.scalar(select(FlightInformation).where(FlightInformation.icao == flight_icao).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS)).order_by(FlightInformation.timestamp.desc()))
 
         if flight is None:
-            return make_response({"message": "There is no flight with this ICAO address"}, 400)
+            return make_response({"message": "There is no flight with this ICAO address"}, 404)
 
         atc_user_id = authentication.get_user_id(parsed_token)
 
@@ -49,7 +49,36 @@ def control_flight(icao):
 
         session.commit()
 
-    return make_response({"message": "Instructions were applied successfully"}, 200)
+    return make_response({"message": "Instructions were applied successfully"}, 201)
+
+@app.route("/instructions/<string:flight_icao>/<string:token>", methods=["DELETE"])
+def stop_controlling_flight(flight_icao, token):
+    parsed_token = authentication.parse_token(token)
+
+    if not authentication.is_token_active(parsed_token):
+        return make_response({"message": "Unauthorized"}, 401)
+
+    with Session(db_engine) as session:
+        flight = session.scalar(select(FlightInformation).where(FlightInformation.icao == flight_icao).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS)).order_by(FlightInformation.timestamp.desc()))
+
+        if flight is None:
+            return make_response({"message": "There is no flight with this ICAO address"}, 404)
+
+        atc_user_id = authentication.get_user_id(parsed_token)
+
+        if flight.atc_instructions_id != None:
+            if atc_user_id != flight.atc_instructions.atc_user_id:
+                return make_response({"message": "This flight is controlled by another ATC now"}, 403)
+        else:
+            return make_response({"message": "This flight is not controlled by any ATC now"}, 400)
+
+        flight = FlightInformation.from_other_flight_info(flight)
+        flight.atc_instructions_id = None
+        session.add(flight)
+
+        session.commit()
+
+    return make_response({"message": "Instructions were deleted successfully"}, 200)
 
 @app.route("/configuration", methods=["GET"])
 def get_configuration():
