@@ -39,6 +39,9 @@ function RadarPage() {
   const [flightDetails, setFlightDetails] = useState("");
   const [flightsUpdateIntervalInSeconds, setFlightsUpdateIntervalInSeconds] = useState(5);
 
+  const [flightControlButtonText, setFlightControlButtonText] = useState("Control this flight");
+  const [flightControlButtonDisplay, setFlightControlButtonDisplay] = useState("none");
+
   const playBellSound = useSound(Bell).playSound;
 
   useEffect(() => {
@@ -53,6 +56,7 @@ function RadarPage() {
     }).addTo(map);
 
     map.on("click", () => {
+      setFlightControlButtonDisplay("none");
       setFlightDetails("");
       spectatedFlightIcao = null;
     });
@@ -61,7 +65,7 @@ function RadarPage() {
 
     const intervalId = setInterval(() => {
       fetchAndDisplayFlights();
-      context.kc.updateToken();
+      context.kc.updateToken(60); // update the token if it expires in the next 60 seconds
     }, flightsUpdateIntervalInSeconds * 1000);
 
     return () => {
@@ -208,9 +212,18 @@ function RadarPage() {
         Track: ${(flight.track !== null) ? flight.track : "---"}°
       </div>
     `);
+    console.log(flight.instructions);
+    if (flight.instructions !== null) {
+      setFlightControlButtonText("Control this flight");
+    }
+    else {
+      setFlightControlButtonText("Stop controlling this flight");
+    }
+    setFlightControlButtonDisplay("block");
   };
 
   function hideFlightInfo() {
+    setFlightControlButtonDisplay("none");
     setFlightDetails("");
     spectatedFlightIcao = null;
     bellNotifier("The spectated flight was lost!");
@@ -223,17 +236,27 @@ function RadarPage() {
     }, 10);
   };
 
-  async function startControllingFlight() {
+  async function controlFlight(instructions = undefined) {
     try {
+      let jsonBody = {};
+      jsonBody.token = context.kc.token;
+
+      if (instructions !== undefined) {
+        jsonBody.altitude = instructions.altitude;
+        jsonBody.ground_speed = instructions.ground_speed;
+        jsonBody.track = instructions.track;
+        jsonBody.vertical_rate = instructions.vertical_rate;
+      }
+
       await fetch(`${context.backendAddress}/instructions/${spectatedFlightIcao}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          "token": context.kc.token
-        })
+        body: JSON.stringify(jsonBody)
       });
+
+      fetchAndDisplayFlights();
     } catch (error) {
       // console.error(error);
     }
@@ -256,7 +279,7 @@ function RadarPage() {
       <div id="flight-info" style={{display: "flex", height: "45%", padding: "10px", border: "0", overflowY: "auto"}}>
         <div id="flight-details" style={{display: "flex"}} dangerouslySetInnerHTML={{ __html: flightDetails }}></div>
         <div id="flight-controls" style={{display: "flex", marginLeft: "10px"}}>
-          <button onClick={startControllingFlight} style={{height: "20px"}}>Control this flight</button>
+          <button onClick={controlFlight} style={{height: "20px", display: flightControlButtonDisplay}}>{flightControlButtonText}</button>
         </div>
       </div>
     </div>

@@ -14,8 +14,8 @@ function SettingsPage() {
     loadConfiguration();
 
     const intervalId = setInterval(() => {
-      context.kc.updateToken();
-    }, 60000); // once at every minute
+      context.kc.updateToken(60); // update the token if it expires in the next 60 seconds
+    }, 30000); // check once at every 30 seconds
 
     return () => {
       clearInterval(intervalId);
