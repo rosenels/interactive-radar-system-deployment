@@ -7,6 +7,7 @@ import { Context } from "./Context";
 
 let spectatedFlightIcao = null;
 let foundedSpectatedFlight = false;
+let spectatedFlightControllerUser = null;
 
 function useSound(audioSource) {
   const soundRef = useRef();
@@ -36,11 +37,12 @@ function RadarPage() {
   const context = useContext(Context);
 
   const mapRef = useRef(null);
+
   const [flightDetails, setFlightDetails] = useState("");
   const [flightsUpdateIntervalInSeconds, setFlightsUpdateIntervalInSeconds] = useState(5);
 
-  const [flightControlButtonText, setFlightControlButtonText] = useState("Control this flight");
-  const [flightControlButtonDisplay, setFlightControlButtonDisplay] = useState("none");
+  const [flightOptionsDivDisplay, setFlightOptionsDivDisplay] = useState("none");
+  const [flightControlsDivDisplay, setFlightControlsDivDisplay] = useState("none");
 
   const playBellSound = useSound(Bell).playSound;
 
@@ -56,9 +58,7 @@ function RadarPage() {
     }).addTo(map);
 
     map.on("click", () => {
-      setFlightControlButtonDisplay("none");
-      setFlightDetails("");
-      spectatedFlightIcao = null;
+      hideFlightInfo();
     });
 
     fetchAndDisplayFlights();
@@ -96,10 +96,19 @@ function RadarPage() {
     }
     catch(error) {
       // console.error(error);
+
+      hideFlightInfo();
+
+      // Clear existing flight markers
+      mapRef.current.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+          map.removeLayer(layer);
+        }
+      });
       return;
     }
 
-    // Clear existing markers
+    // Clear existing flight markers
     map.eachLayer((layer) => {
       if (layer instanceof L.Marker) {
         map.removeLayer(layer);
@@ -153,7 +162,7 @@ function RadarPage() {
     }
 
     if (!foundedSpectatedFlight && spectatedFlightIcao) {
-      hideFlightInfo();
+      hideFlightInfo("The spectated flight was lost!");
     }
   };
 
@@ -206,27 +215,38 @@ function RadarPage() {
       </div>
       <div style="height: 100%">
         ICAO: <strong>${flight.icao}</strong><br>
-        Callsign: ${(flight.callsign !== null) ? flight.callsign : "---"}<br>
+        Callsign: ${(flight.callsign !== null) ? flight.callsign : "---"}<br><br>
         Altitude: ${(flight.altitude !== null) ? flight.altitude : "---"} feet<br>
         Speed: ${(flight.ground_speed !== null) ? flight.ground_speed : "---"} knots<br>
         Track: ${(flight.track !== null) ? flight.track : "---"}°
       </div>
     `);
-    console.log(flight.instructions);
+
     if (flight.instructions !== null) {
-      setFlightControlButtonText("Control this flight");
+      if (flight.instructions.atc_user_id === context.kc.subject) {
+        spectatedFlightControllerUser = flight.instructions.atc_user_id;
+        setFlightControlsDivDisplay("block");
+      }
+      else {
+        spectatedFlightControllerUser = flight.instructions.atc_user_fullname;
+        setFlightControlsDivDisplay("none");
+      }
     }
     else {
-      setFlightControlButtonText("Stop controlling this flight");
+      spectatedFlightControllerUser = null;
+      setFlightControlsDivDisplay("none");
     }
-    setFlightControlButtonDisplay("block");
+    setFlightOptionsDivDisplay("block");
   };
 
-  function hideFlightInfo() {
-    setFlightControlButtonDisplay("none");
+  function hideFlightInfo(message = undefined) {
+    setFlightOptionsDivDisplay("none");
     setFlightDetails("");
     spectatedFlightIcao = null;
-    bellNotifier("The spectated flight was lost!");
+
+    if (message !== undefined) {
+      bellNotifier(message);
+    }
   };
 
   function bellNotifier(message) {
@@ -262,24 +282,54 @@ function RadarPage() {
     }
   }
 
+  async function stopControllingFlight() {
+    try {
+      await fetch(`${context.backendAddress}/instructions/${spectatedFlightIcao}/${context.kc.token}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        }
+      });
+
+      fetchAndDisplayFlights();
+    } catch (error) {
+      // console.error(error);
+    }
+  }
+
   return (
-    <div style={{height: "100vh", display: "flex", flexDirection: "column"}}>
-      <div style={{display: "flex", justifyContent: "right", margin: "10px"}}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "right", margin: "10px" }}>
         {context.kc.hasResourceRole(context.adminUserRole, context.adminUserResource) ? (
           <div>
             <Link to="/settings">Manage system settings</Link>
-            <a href={`${context.kcOptions.url}admin/${context.kcOptions.realm}/console/#/${context.kcOptions.realm}/users`} target="_blank" rel="noreferrer" style={{marginLeft: "10px"}}>Manage system users</a>
+            <a href={`${context.kcOptions.url}admin/${context.kcOptions.realm}/console/#/${context.kcOptions.realm}/users`} target="_blank" rel="noreferrer" style={{ marginLeft: "10px" }}>Manage system users</a>
           </div>
         ) : null}
-        <a href={`${context.kcOptions.url}realms/${context.kcOptions.realm}/account`} target="_blank" rel="noreferrer" style={{marginLeft: "10px"}}>Manage your account</a>
-        <button onClick={() => context.kc.logout()} style={{marginLeft: "10px"}}>Logout</button>
+        <a href={`${context.kcOptions.url}realms/${context.kcOptions.realm}/account`} target="_blank" rel="noreferrer" style={{ marginLeft: "10px" }}>Manage your account</a>
+        <button onClick={() => context.kc.logout()} style={{ marginLeft: "10px" }}>Logout</button>
       </div>
-      <div id="map" style={{height: "55%"}}></div>
-      <h2 style={{margin: "10px", paddingTop: "5px", borderTop: "1px solid #ccc"}}>Flight Information</h2>
-      <div id="flight-info" style={{display: "flex", height: "45%", padding: "10px", border: "0", overflowY: "auto"}}>
-        <div id="flight-details" style={{display: "flex"}} dangerouslySetInnerHTML={{ __html: flightDetails }}></div>
-        <div id="flight-controls" style={{display: "flex", marginLeft: "10px"}}>
-          <button onClick={controlFlight} style={{height: "20px", display: flightControlButtonDisplay}}>{flightControlButtonText}</button>
+      <div id="map" style={{ height: "55%" }}></div>
+      <h2 style={{ margin: "10px", paddingTop: "5px", borderTop: "1px solid #ccc" }}>Flight Information</h2>
+      <div id="flight-info" style={{ display: "flex", height: "45%", padding: "10px", border: "0", overflowY: "auto" }}>
+        <div id="flight-details" style={{ display: "flex" }} dangerouslySetInnerHTML={{ __html: flightDetails }}></div>
+        <div id="flight-options" style={{ display: flightOptionsDivDisplay, marginLeft: "10px" }}>
+          { spectatedFlightControllerUser === null ? (
+            <button onClick={controlFlight} style={{ height: "20px" }}>Control this flight</button>
+          ) : spectatedFlightControllerUser === context.kc.subject ? (
+            <button onClick={stopControllingFlight} style={{ height: "20px" }}>Stop controlling this flight</button>
+          ) : (
+            <p>This flight is controlled by: {spectatedFlightControllerUser}</p>
+          )}
+          <div id="flight-controls" style={{ display: flightControlsDivDisplay }}>
+            <br/>
+            <br/>
+            <input type="number" style={{height: "14px"}}/>
+            <br/>
+            <input type="number" style={{height: "14px"}}/>
+            <br/>
+            <input type="number" style={{height: "14px"}}/>
+          </div>
         </div>
       </div>
     </div>
