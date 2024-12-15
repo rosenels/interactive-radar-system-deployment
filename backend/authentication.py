@@ -22,3 +22,6 @@ def is_admin_user_token(parsed_token):
 
 def get_user_id(parsed_token):
     return parsed_token["sub"]
+
+def get_user_fullname(parsed_token):
+    return parsed_token["name"]

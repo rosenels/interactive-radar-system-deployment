@@ -36,20 +36,24 @@ def control_flight(flight_icao):
 
         new_instructions = InstructionsFromATC(
             atc_user_id=atc_user_id,
+            atc_user_fullname=authentication.get_user_fullname(parsed_token),
             altitude=data.get("altitude", None),
             ground_speed=data.get("ground_speed", None),
             track=data.get("track", None),
             vertical_rate=data.get("vertical_rate", None)
         )
-        session.add(new_instructions)
 
         flight = FlightInformation.from_other_flight_info(flight)
-        flight.atc_instructions_id = new_instructions.id
+        flight.timestamp = datetime.now()
         session.add(flight)
 
-        session.commit()
+        new_instructions.flight_info.append(flight)
+        session.add(new_instructions)
 
-    return make_response({"message": "Instructions were applied successfully"}, 201)
+        session.commit()
+        receiver.flights_instructions[flight_icao] = new_instructions.id
+
+    return make_response({"message": "Instructions were applied successfully"}, 200)
 
 @app.route("/instructions/<string:flight_icao>/<string:token>", methods=["DELETE"])
 def stop_controlling_flight(flight_icao, token):
@@ -74,9 +78,11 @@ def stop_controlling_flight(flight_icao, token):
 
         flight = FlightInformation.from_other_flight_info(flight)
         flight.atc_instructions_id = None
+        flight.timestamp = datetime.now()
         session.add(flight)
 
         session.commit()
+        receiver.flights_instructions[flight_icao] = None
 
     return make_response({"message": "Instructions were deleted successfully"}, 200)
 

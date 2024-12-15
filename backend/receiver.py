@@ -6,6 +6,7 @@ from models import *
 import sbs_decoder
 
 flights = []
+flights_instructions = {}
 
 def raw_in_loop(sock):
     global flights, quit
@@ -75,49 +76,67 @@ def operate():
         print(f"{str(type(e))}: {str(e)}\n{traceback.format_exc()}")
 
 def keep_operating():
-    global flights, receiver_thread, quit
+    global flights, flights_instructions, receiver_thread, quit
 
     with Session(db_engine) as session:
         while not quit:
             time.sleep(RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS / 2)
 
             try:
-                atc_instructions_in_db = list(session.scalars(select(InstructionsFromATC).where(InstructionsFromATC.timestamp > datetime.now() - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS)).order_by(InstructionsFromATC.timestamp.desc())))
-                flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=0.8 * MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS))))
+                flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=0.8 * MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS)).order_by(FlightInformation.timestamp.desc())))
+
                 updated_flights = []
+                flights_icao_addresses = []
+
+                for flight in flights_in_db:
+                    if flight.icao not in flights_icao_addresses:
+                        updated_flights.append(flight)
+                        flights_icao_addresses.append(flight.icao)
+
+                flights_in_db = updated_flights
+                updated_flights = []
+
+                atc_instructions_in_db = list(session.scalars(select(InstructionsFromATC).where(InstructionsFromATC.timestamp > datetime.now() - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS)).order_by(InstructionsFromATC.timestamp.desc())))
 
                 for i in range(len(flights)):
                     if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
                         temp_flight = FlightInformation.from_flight_dict(flights[i])
 
+                        # flight_not_found = True
+                        # for flight in flights_in_db:
+                        #     if temp_flight == flight:
+                        #         flight_not_found = False
+                        #         break
+
+                        # if flight_not_found:
+                        flights[i]["instructions"] = None
+
+                        if temp_flight.icao in flights_instructions.keys():
+                            temp_flight.atc_instructions_id = flights_instructions[temp_flight.icao]
+
+                        if temp_flight.atc_instructions_id != None:
+                            for instruction in atc_instructions_in_db:
+                                if instruction.id == temp_flight.atc_instructions_id:
+                                    # instruction.timestamp = datetime.now()
+                                    flights[i]["instructions"] = {}
+                                    flights[i]["instructions"]["id"] = instruction.id
+                                    flights[i]["instructions"]["atc_user_id"] = instruction.atc_user_id
+                                    flights[i]["instructions"]["atc_user_fullname"] = instruction.atc_user_fullname
+                                    flights[i]["instructions"]["altitude"] = instruction.altitude
+                                    flights[i]["instructions"]["ground_speed"] = instruction.ground_speed
+                                    flights[i]["instructions"]["track"] = instruction.track
+                                    flights[i]["instructions"]["vertical_rate"] = instruction.vertical_rate
+                                    flights[i]["instructions"]["timestamp"] = instruction.timestamp
+                                    break
+
                         flight_not_found = True
                         for flight in flights_in_db:
                             if temp_flight == flight:
                                 flight_not_found = False
+                                flights_instructions.pop(temp_flight.icao, None)
                                 break
 
                         if flight_not_found:
-                            instructions_id = None
-                            flights[i]["instructions"] = None
-
-                            for instruction in atc_instructions_in_db:
-                                for flight in instruction.flight_info:
-                                    if flight.icao == temp_flight.icao:
-                                        instructions_id = instruction.id
-                                        instruction.timestamp = datetime.now()
-                                        flights[i]["instructions"] = {}
-                                        flights[i]["instructions"]["id"] = instruction.id
-                                        flights[i]["instructions"]["atc_user_id"] = instruction.atc_user_id
-                                        flights[i]["instructions"]["altitude"] = instruction.altitude
-                                        flights[i]["instructions"]["ground_speed"] = instruction.ground_speed
-                                        flights[i]["instructions"]["track"] = instruction.track
-                                        flights[i]["instructions"]["vertical_rate"] = instruction.vertical_rate
-                                        flights[i]["instructions"]["timestamp"] = instruction.timestamp
-                                        break
-                                if instructions_id is not None:
-                                    break
-                            temp_flight.atc_instructions_id = instructions_id
-
                             session.add(temp_flight)
 
                         updated_flights.append(flights[i])

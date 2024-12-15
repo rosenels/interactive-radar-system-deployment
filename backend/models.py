@@ -155,6 +155,7 @@ class InstructionsFromATC(Base):
     __tablename__ = "atc_instructions"
     id: Mapped[int] = mapped_column(primary_key=True)
     atc_user_id: Mapped[str] = mapped_column(Text)
+    atc_user_fullname: Mapped[str] = mapped_column(Text)
     altitude: Mapped[int] = mapped_column(Integer, nullable=True)
     ground_speed: Mapped[int] = mapped_column(Integer, nullable=True)
     track: Mapped[int] = mapped_column(Integer, nullable=True)
@@ -162,8 +163,9 @@ class InstructionsFromATC(Base):
     flight_info: Mapped[List["FlightInformation"]] = relationship(back_populates="atc_instructions")
     timestamp: Mapped[DateTime] = mapped_column(DateTime)
 
-    def __init__(self, atc_user_id, altitude, ground_speed, track, vertical_rate):
+    def __init__(self, atc_user_id, atc_user_fullname, altitude, ground_speed, track, vertical_rate):
         self.atc_user_id = atc_user_id
+        self.atc_user_fullname = atc_user_fullname
         self.altitude = altitude
         self.ground_speed = ground_speed
         self.track = track
