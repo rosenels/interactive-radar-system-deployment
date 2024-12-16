@@ -7,7 +7,6 @@ import { Context } from "./Context";
 
 let spectatedFlightIcao = null;
 let foundedSpectatedFlight = false;
-let spectatedFlightControllerUser = null;
 
 function useSound(audioSource) {
   const soundRef = useRef();
@@ -43,6 +42,12 @@ function RadarPage() {
 
   const [flightOptionsDivDisplay, setFlightOptionsDivDisplay] = useState("none");
   const [flightControlsDivDisplay, setFlightControlsDivDisplay] = useState("none");
+
+  const [spectatedFlightControllerUser, setSpectatedFlightControllerUser] = useState(null);
+
+  const [instructedAltitude, setInstructedAltitude] = useState();
+  const [instructedSpeed, setInstructedSpeed] = useState();
+  const [instructedTrack, setInstructedTrack] = useState();
 
   const playBellSound = useSound(Bell).playSound;
 
@@ -224,16 +229,35 @@ function RadarPage() {
 
     if (flight.instructions !== null) {
       if (flight.instructions.atc_user_id === context.kc.subject) {
-        spectatedFlightControllerUser = flight.instructions.atc_user_id;
+        setSpectatedFlightControllerUser(flight.instructions.atc_user_id);
         setFlightControlsDivDisplay("block");
+
+        if (flight.instructions.altitude !== null) {
+          setInstructedAltitude(flight.instructions.altitude);
+        }
+        else {
+          setInstructedAltitude("");
+        }
+        if (flight.instructions.ground_speed !== null) {
+          setInstructedSpeed(flight.instructions.ground_speed);
+        }
+        else {
+          setInstructedSpeed("");
+        }
+        if (flight.instructions.track !== null) {
+          setInstructedTrack(flight.instructions.track);
+        }
+        else {
+          setInstructedTrack("");
+        }
       }
       else {
-        spectatedFlightControllerUser = flight.instructions.atc_user_fullname;
+        setSpectatedFlightControllerUser(flight.instructions.atc_user_fullname);
         setFlightControlsDivDisplay("none");
       }
     }
     else {
-      spectatedFlightControllerUser = null;
+      setSpectatedFlightControllerUser(null);
       setFlightControlsDivDisplay("none");
     }
     setFlightOptionsDivDisplay("block");
@@ -265,7 +289,7 @@ function RadarPage() {
         jsonBody.altitude = instructions.altitude;
         jsonBody.ground_speed = instructions.ground_speed;
         jsonBody.track = instructions.track;
-        jsonBody.vertical_rate = instructions.vertical_rate;
+        // jsonBody.vertical_rate = instructions.vertical_rate;
       }
 
       await fetch(`${context.backendAddress}/instructions/${spectatedFlightIcao}`, {
@@ -324,11 +348,13 @@ function RadarPage() {
           <div id="flight-controls" style={{ display: flightControlsDivDisplay }}>
             <br/>
             <br/>
-            <input type="number" style={{height: "14px"}}/>
+            <input type="number" value={instructedAltitude} onChange={(e) => setInstructedAltitude(e.target.value)} style={{height: "14px", width: "100px"}}/> feet
             <br/>
-            <input type="number" style={{height: "14px"}}/>
+            <input type="number" value={instructedSpeed} onChange={(e) => setInstructedSpeed(e.target.value)} style={{height: "14px", width: "100px"}}/> knots
             <br/>
-            <input type="number" style={{height: "14px"}}/>
+            <input type="number" value={instructedTrack} onChange={(e) => setInstructedTrack(e.target.value)} style={{height: "14px", width: "100px"}}/> °
+            <br/>
+            <button onClick={() => controlFlight({altitude: instructedAltitude, ground_speed: instructedSpeed, track: instructedTrack})}>Save</button>
           </div>
         </div>
       </div>
