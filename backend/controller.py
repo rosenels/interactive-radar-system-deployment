@@ -43,12 +43,12 @@ def control_flight(flight_icao):
             vertical_rate=data.get("vertical_rate", None)
         )
 
+        session.add(new_instructions)
+
         flight = FlightInformation.from_other_flight_info(flight)
+        flight.atc_instructions = new_instructions
         flight.timestamp = datetime.now()
         session.add(flight)
-
-        new_instructions.flight_info.append(flight)
-        session.add(new_instructions)
 
         session.commit()
         receiver.flights_instructions[flight_icao] = new_instructions.id

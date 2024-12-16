@@ -74,26 +74,27 @@ def prepare_value(old_value, new_value):
     return new_value
 
 def parse_sbs_message(msg):
-    msg = str(msg).replace("\n", "").replace(" ", "").split(",")
-    icao = msg[4]
-    flight = get_flight(icao)
-    flight["session_id"] = prepare_value(flight["session_id"], msg[2])
-    flight["aircraft_id"] = prepare_value(flight["aircraft_id"], msg[3])
-    flight["flight_id"] = prepare_value(flight["flight_id"], msg[5])
-    try:
-        flight["last_datetime"] = prepare_value(flight["last_datetime"], parser.parse(f"{msg[6]} {msg[7]}"))
-    except:
-        flight["last_datetime"] = prepare_value(flight["last_datetime"], datetime.now())
-    flight["callsign"] = prepare_value(flight["callsign"], msg[10])
-    flight["altitude"] = prepare_value(flight["altitude"], msg[11])
-    flight["ground_speed"] = prepare_value(flight["ground_speed"], msg[12])
-    flight["track"] = prepare_value(flight["track"], msg[13])
-    flight["latitude"] = prepare_value(flight["latitude"], msg[14])
-    flight["longitude"] = prepare_value(flight["longitude"], msg[15])
-    flight["vertical_rate"] = prepare_value(flight["vertical_rate"], msg[16])
-    flight["squawk"] = prepare_value(flight["squawk"], msg[17])
-    flight["alert_squawk_change"] = prepare_value(flight["alert_squawk_change"], msg[18])
-    flight["emergency_code"] = prepare_value(flight["emergency_code"], msg[19])
-    flight["spi_ident"] = prepare_value(flight["spi_ident"], msg[20])
-    flight["on_ground"] = prepare_value(flight["on_ground"], msg[21])
-    update_flights(flight)
+    msg_parts = str(msg).replace("\n", "").replace(" ", "").split(",")
+    if len(msg_parts) >= 22:
+        icao = msg_parts[4]
+        flight = get_flight(icao)
+        flight["session_id"] = prepare_value(flight["session_id"], msg_parts[2])
+        flight["aircraft_id"] = prepare_value(flight["aircraft_id"], msg_parts[3])
+        flight["flight_id"] = prepare_value(flight["flight_id"], msg_parts[5])
+        try:
+            flight["last_datetime"] = prepare_value(flight["last_datetime"], parser.parse(f"{msg_parts[6]} {msg_parts[7]}"))
+        except:
+            flight["last_datetime"] = prepare_value(flight["last_datetime"], datetime.now())
+        flight["callsign"] = prepare_value(flight["callsign"], msg_parts[10])
+        flight["altitude"] = prepare_value(flight["altitude"], msg_parts[11])
+        flight["ground_speed"] = prepare_value(flight["ground_speed"], msg_parts[12])
+        flight["track"] = prepare_value(flight["track"], msg_parts[13])
+        flight["latitude"] = prepare_value(flight["latitude"], msg_parts[14])
+        flight["longitude"] = prepare_value(flight["longitude"], msg_parts[15])
+        flight["vertical_rate"] = prepare_value(flight["vertical_rate"], msg_parts[16])
+        flight["squawk"] = prepare_value(flight["squawk"], msg_parts[17])
+        flight["alert_squawk_change"] = prepare_value(flight["alert_squawk_change"], msg_parts[18])
+        flight["emergency_code"] = prepare_value(flight["emergency_code"], msg_parts[19])
+        flight["spi_ident"] = prepare_value(flight["spi_ident"], msg_parts[20])
+        flight["on_ground"] = prepare_value(flight["on_ground"], msg_parts[21])
+        update_flights(flight)

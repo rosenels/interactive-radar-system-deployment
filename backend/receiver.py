@@ -102,13 +102,6 @@ def keep_operating():
                     if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
                         temp_flight = FlightInformation.from_flight_dict(flights[i])
 
-                        # flight_not_found = True
-                        # for flight in flights_in_db:
-                        #     if temp_flight == flight:
-                        #         flight_not_found = False
-                        #         break
-
-                        # if flight_not_found:
                         flights[i]["instructions"] = None
 
                         if temp_flight.icao in flights_instructions.keys():
@@ -117,7 +110,6 @@ def keep_operating():
                         if temp_flight.atc_instructions_id != None:
                             for instruction in atc_instructions_in_db:
                                 if instruction.id == temp_flight.atc_instructions_id:
-                                    # instruction.timestamp = datetime.now()
                                     flights[i]["instructions"] = {}
                                     flights[i]["instructions"]["id"] = instruction.id
                                     flights[i]["instructions"]["atc_user_id"] = instruction.atc_user_id
@@ -145,7 +137,7 @@ def keep_operating():
                 session.commit()
 
                 if not receiver_thread.is_alive():
-                    receiver_thread = threading.Thread(target=operate)
+                    receiver_thread = threading.Thread(target=operate, daemon=True)
                     receiver_thread.start()
 
             except Exception as e:
@@ -154,7 +146,7 @@ def keep_operating():
 def start():
     global receiver_thread, quit
     quit = False
-    receiver_thread = threading.Thread(target=operate)
+    receiver_thread = threading.Thread(target=operate, daemon=True)
     receiver_thread.start()
     validator_thread = threading.Thread(target=keep_operating)
     validator_thread.start()
@@ -163,11 +155,10 @@ def start():
         exit()
 
 def stop():
-    global receiver_thread, quit
+    global quit, sock
     quit = True
     try:
         sock.close()
-        receiver_thread.join()
     except:
         pass
     # print(flights)
