@@ -157,8 +157,32 @@ function RadarPage() {
         // eslint-disable-next-line
         flightMarker.on("click", () => {
           displayFlightInfo(flight);
+
           spectatedFlightIcao = flight.icao;
           foundedSpectatedFlight = true;
+
+          if (flight.instructions !== null) {
+            if (flight.instructions.atc_user_id === context.kc.subject) {
+              if (flight.instructions.altitude !== null) {
+                setInstructedAltitude(flight.instructions.altitude);
+              }
+              else {
+                setInstructedAltitude("");
+              }
+              if (flight.instructions.ground_speed !== null) {
+                setInstructedSpeed(flight.instructions.ground_speed);
+              }
+              else {
+                setInstructedSpeed("");
+              }
+              if (flight.instructions.track !== null) {
+                setInstructedTrack(flight.instructions.track);
+              }
+              else {
+                setInstructedTrack("");
+              }
+            }
+          }
         });
       }
       catch(error) {
@@ -231,25 +255,6 @@ function RadarPage() {
       if (flight.instructions.atc_user_id === context.kc.subject) {
         setSpectatedFlightControllerUser(flight.instructions.atc_user_id);
         setFlightControlsDivDisplay("block");
-
-        if (flight.instructions.altitude !== null) {
-          setInstructedAltitude(flight.instructions.altitude);
-        }
-        else {
-          setInstructedAltitude("");
-        }
-        if (flight.instructions.ground_speed !== null) {
-          setInstructedSpeed(flight.instructions.ground_speed);
-        }
-        else {
-          setInstructedSpeed("");
-        }
-        if (flight.instructions.track !== null) {
-          setInstructedTrack(flight.instructions.track);
-        }
-        else {
-          setInstructedTrack("");
-        }
       }
       else {
         setSpectatedFlightControllerUser(flight.instructions.atc_user_fullname);
@@ -259,6 +264,10 @@ function RadarPage() {
     else {
       setSpectatedFlightControllerUser(null);
       setFlightControlsDivDisplay("none");
+
+      setInstructedAltitude("");
+      setInstructedSpeed("");
+      setInstructedTrack("");
     }
     setFlightOptionsDivDisplay("block");
   };
@@ -286,10 +295,15 @@ function RadarPage() {
       jsonBody.token = context.kc.token;
 
       if (instructions !== undefined) {
-        jsonBody.altitude = instructions.altitude;
-        jsonBody.ground_speed = instructions.ground_speed;
-        jsonBody.track = instructions.track;
-        // jsonBody.vertical_rate = instructions.vertical_rate;
+        if (instructions.altitude !== "") {
+          jsonBody.altitude = instructions.altitude;
+        }
+        if (instructions.ground_speed !== "") {
+          jsonBody.ground_speed = instructions.ground_speed;
+        }
+        if (instructions.track !== "") {
+          jsonBody.track = instructions.track;
+        }
       }
 
       await fetch(`${context.backendAddress}/instructions/${spectatedFlightIcao}`, {
