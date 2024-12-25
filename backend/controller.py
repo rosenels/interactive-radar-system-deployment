@@ -30,7 +30,11 @@ def control_flight(flight_icao):
 
         atc_user_id = authentication.get_user_id(parsed_token)
 
-        if flight.atc_instructions_id != None:
+        prev_instructions = None
+
+        if flight.atc_instructions_id is not None:
+            prev_instructions = flight.atc_instructions
+
             if atc_user_id != flight.atc_instructions.atc_user_id:
                 return make_response({"message": "This flight is controlled by another ATC now"}, 403)
 
@@ -39,9 +43,21 @@ def control_flight(flight_icao):
             atc_user_fullname=authentication.get_user_fullname(parsed_token),
             altitude=data.get("altitude", None),
             ground_speed=data.get("ground_speed", None),
-            track=data.get("track", None),
-            vertical_rate=data.get("vertical_rate", None)
+            track=data.get("track", None)
         )
+
+        if prev_instructions is not None:
+            if prev_instructions.altitude == new_instructions.altitude or new_instructions.altitude is None:
+                new_instructions.altitude = prev_instructions.altitude
+                new_instructions.altitude_timestamp = prev_instructions.altitude_timestamp
+
+            if prev_instructions.ground_speed == new_instructions.ground_speed or new_instructions.ground_speed is None:
+                new_instructions.ground_speed = prev_instructions.ground_speed
+                new_instructions.ground_speed_timestamp = prev_instructions.ground_speed_timestamp
+
+            if prev_instructions.track == new_instructions.track or new_instructions.track is None:
+                new_instructions.track = prev_instructions.track
+                new_instructions.track_timestamp = prev_instructions.track_timestamp
 
         session.add(new_instructions)
 
@@ -70,7 +86,7 @@ def stop_controlling_flight(flight_icao, token):
 
         atc_user_id = authentication.get_user_id(parsed_token)
 
-        if flight.atc_instructions_id != None:
+        if flight.atc_instructions is not None:
             if atc_user_id != flight.atc_instructions.atc_user_id:
                 return make_response({"message": "This flight is controlled by another ATC now"}, 403)
         else:

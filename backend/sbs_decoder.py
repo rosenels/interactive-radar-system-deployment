@@ -34,7 +34,7 @@ def get_flight(icao):
     return example_flight.copy()
 
 def remove_flight(icao):
-    if icao == None:
+    if icao is None:
         return
     for flight in flights:
         if flight["icao"] == icao:
@@ -45,7 +45,7 @@ def update_flights(flight=None):
     global flights
     updated_flights = []
 
-    if flight != None:
+    if flight is not None:
         icao = flight["icao"]
     else:
         icao = None
@@ -55,14 +55,14 @@ def update_flights(flight=None):
         if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=settings.MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
             updated_flights.append(flights[i])
 
-    if icao != None:
+    if icao is not None:
         flight["last_datetime"] = datetime.now()
         updated_flights.append(flight)
 
     flights = updated_flights
 
 def prepare_value(old_value, new_value):
-    if new_value == None or new_value == "":
+    if new_value is None or new_value == "":
         return old_value
     if isinstance(new_value, str):
         try:

@@ -80,7 +80,11 @@ def keep_operating():
 
     with Session(db_engine) as session:
         while not quit:
-            time.sleep(RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS / 2)
+            flights_instructions_copy = flights_instructions.copy()
+            timestamp = datetime.now()
+            while timestamp > datetime.now() - timedelta(seconds=RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS / 2):
+                if flights_instructions_copy != flights_instructions or quit:
+                    break
 
             try:
                 flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=0.8 * MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS)).order_by(FlightInformation.timestamp.desc())))
@@ -107,7 +111,7 @@ def keep_operating():
                         if temp_flight.icao in flights_instructions.keys():
                             temp_flight.atc_instructions_id = flights_instructions[temp_flight.icao]
 
-                        if temp_flight.atc_instructions_id != None:
+                        if temp_flight.atc_instructions_id is not None:
                             for instruction in atc_instructions_in_db:
                                 if instruction.id == temp_flight.atc_instructions_id:
                                     flights[i]["instructions"] = {}
@@ -117,7 +121,6 @@ def keep_operating():
                                     flights[i]["instructions"]["altitude"] = instruction.altitude
                                     flights[i]["instructions"]["ground_speed"] = instruction.ground_speed
                                     flights[i]["instructions"]["track"] = instruction.track
-                                    flights[i]["instructions"]["vertical_rate"] = instruction.vertical_rate
                                     flights[i]["instructions"]["timestamp"] = instruction.timestamp
                                     break
 
