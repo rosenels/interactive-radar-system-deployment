@@ -19,9 +19,7 @@ FLIGHT_DATA_PORT = os.getenv("FLIGHT_DATA_PORT") # 0 means the default port for 
 RAW_IN_DEFAULT_PORT = 30002
 SBS_DEFAULT_PORT = 30003
 
-load_dotenv("database.env")
-
-db_engine = create_engine(f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('POSTGRES_DB')}")
+db_engine = create_engine(f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_DB_HOST')}:{os.getenv('POSTGRES_DB_PORT')}/{os.getenv('POSTGRES_DB')}")
 
 Base.metadata.create_all(db_engine) # Creates all tables that don't exist in the database
 
