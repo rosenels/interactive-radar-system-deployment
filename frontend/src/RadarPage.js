@@ -6,7 +6,7 @@ import Bell from "./assets/bell.mp3";
 import { Context } from "./Context";
 
 let spectatedFlightIcao = null;
-let foundedSpectatedFlight = false;
+let foundSpectatedFlight = false;
 
 function useSound(audioSource) {
   const soundRef = useRef();
@@ -42,12 +42,13 @@ function RadarPage() {
 
   const [flightOptionsDivDisplay, setFlightOptionsDivDisplay] = useState("none");
   const [flightControlsDivDisplay, setFlightControlsDivDisplay] = useState("none");
+  const [flightControlsSaveButtonDisplay, setFlightControlsSaveButtonDisplay] = useState("none");
 
   const [spectatedFlightControllerUser, setSpectatedFlightControllerUser] = useState(null);
 
-  const [instructedAltitude, setInstructedAltitude] = useState();
-  const [instructedSpeed, setInstructedSpeed] = useState();
-  const [instructedTrack, setInstructedTrack] = useState();
+  const [instructedAltitude, setInstructedAltitude] = useState("");
+  const [instructedSpeed, setInstructedSpeed] = useState("");
+  const [instructedTrack, setInstructedTrack] = useState("");
 
   const playBellSound = useSound(Bell).playSound;
 
@@ -121,14 +122,14 @@ function RadarPage() {
     });
 
     const flights = data.flights;
-    foundedSpectatedFlight = false;
+    foundSpectatedFlight = false;
 
     for (const i in flights) {
       const flight = flights[i];
 
       if (flight.icao === spectatedFlightIcao) {
         displayFlightInfo(flight);
-        foundedSpectatedFlight = true;
+        foundSpectatedFlight = true;
       }
 
       const isGroundVehicle = flight.callsign === "GRND";
@@ -156,10 +157,11 @@ function RadarPage() {
 
         // eslint-disable-next-line
         flightMarker.on("click", () => {
+          setFlightControlsSaveButtonDisplay("none");
           displayFlightInfo(flight);
 
           spectatedFlightIcao = flight.icao;
-          foundedSpectatedFlight = true;
+          foundSpectatedFlight = true;
 
           if (flight.instructions !== null) {
             if (flight.instructions.atc_user_id === context.kc.subject) {
@@ -190,7 +192,7 @@ function RadarPage() {
       }
     }
 
-    if (!foundedSpectatedFlight && spectatedFlightIcao) {
+    if (!foundSpectatedFlight && spectatedFlightIcao) {
       hideFlightInfo("The spectated flight was lost!");
     }
   };
@@ -205,7 +207,7 @@ function RadarPage() {
   };
 
   async function displayFlightInfo(flight) {
-    let imageSrc = "";
+    let imageSrc;
     let imagePhotographer = "";
     let imageLink = "";
     let imageWidth = 0;
@@ -295,15 +297,9 @@ function RadarPage() {
       jsonBody.token = context.kc.token;
 
       if (instructions !== undefined) {
-        if (instructions.altitude !== "") {
-          jsonBody.altitude = instructions.altitude;
-        }
-        if (instructions.ground_speed !== "") {
-          jsonBody.ground_speed = instructions.ground_speed;
-        }
-        if (instructions.track !== "") {
-          jsonBody.track = instructions.track;
-        }
+        jsonBody.altitude = instructions.altitude;
+        jsonBody.ground_speed = instructions.ground_speed;
+        jsonBody.track = instructions.track;
       }
 
       await fetch(`${context.backendAddress}/instructions/${spectatedFlightIcao}`, {
@@ -314,6 +310,7 @@ function RadarPage() {
         body: JSON.stringify(jsonBody)
       });
 
+      setFlightControlsSaveButtonDisplay("none");
       fetchAndDisplayFlights();
     } catch (error) {
       // console.error(error);
@@ -362,13 +359,16 @@ function RadarPage() {
           <div id="flight-controls" style={{ display: flightControlsDivDisplay }}>
             <br/>
             <br/>
-            <input type="number" value={instructedAltitude} onChange={(e) => setInstructedAltitude(e.target.value)} style={{height: "14px", width: "100px"}}/> feet
+            <input type="number" value={instructedAltitude} onChange={(e) => {setInstructedAltitude(e.target.value); setFlightControlsSaveButtonDisplay("block")}} style={{height: "14px", width: "100px"}}/>
+            <button onClick={() => {if (instructedAltitude !== "") {setInstructedAltitude(""); setFlightControlsSaveButtonDisplay("block")}}} style={{height: "18px", position: "relative", "top": "1px"}}>x</button> feet
             <br/>
-            <input type="number" value={instructedSpeed} onChange={(e) => setInstructedSpeed(e.target.value)} style={{height: "14px", width: "100px"}}/> knots
+            <input type="number" value={instructedSpeed} onChange={(e) => {setInstructedSpeed(e.target.value); setFlightControlsSaveButtonDisplay("block")}} style={{height: "14px", width: "100px"}}/>
+            <button onClick={() => {if (instructedSpeed !== "") {setInstructedSpeed(""); setFlightControlsSaveButtonDisplay("block")}}} style={{height: "18px", position: "relative", "top": "1px"}}>x</button> knots
             <br/>
-            <input type="number" value={instructedTrack} onChange={(e) => setInstructedTrack(e.target.value)} style={{height: "14px", width: "100px"}}/> °
+            <input type="number" value={instructedTrack} onChange={(e) => {setInstructedTrack(e.target.value); setFlightControlsSaveButtonDisplay("block")}} style={{height: "14px", width: "100px"}}/>
+            <button onClick={() => {if (instructedTrack !== "") {setInstructedTrack(""); setFlightControlsSaveButtonDisplay("block")}}} style={{height: "18px", position: "relative", "top": "1px"}}>x</button> °
             <br/>
-            <button onClick={() => controlFlight({altitude: instructedAltitude, ground_speed: instructedSpeed, track: instructedTrack})}>Save</button>
+            <button onClick={() => controlFlight({altitude: instructedAltitude, ground_speed: instructedSpeed, track: instructedTrack})} style={{display: flightControlsSaveButtonDisplay}}>Save</button>
           </div>
         </div>
       </div>
