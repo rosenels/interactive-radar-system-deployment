@@ -156,6 +156,7 @@ class InstructionsFromATC(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     atc_user_id: Mapped[str] = mapped_column(Text)
     atc_user_fullname: Mapped[str] = mapped_column(Text)
+    flight_icao: Mapped[str] = mapped_column(Text)
     timestamp: Mapped[DateTime] = mapped_column(DateTime)
 
     altitude: Mapped[int] = mapped_column(Integer, nullable=True)
@@ -169,26 +170,27 @@ class InstructionsFromATC(Base):
 
     flight_info: Mapped[List["FlightInformation"]] = relationship(back_populates="atc_instructions")
 
-    def __init__(self, atc_user_id, atc_user_fullname, altitude, ground_speed, track):
+    def __init__(self, atc_user_id, atc_user_fullname, flight_icao, altitude, ground_speed, track):
         self.atc_user_id = atc_user_id
         self.atc_user_fullname = atc_user_fullname
+        self.flight_icao = flight_icao
         self.timestamp = datetime.now()
 
-        if altitude is not None:
+        if altitude is not None and altitude != "":
             self.altitude = int(altitude)
             self.altitude_timestamp = self.timestamp
         else:
             self.altitude = None
             self.altitude_timestamp = None
 
-        if ground_speed is not None:
+        if ground_speed is not None and ground_speed != "":
             self.ground_speed = int(ground_speed)
             self.ground_speed_timestamp = self.timestamp
         else:
             self.ground_speed = None
             self.ground_speed_timestamp = None
 
-        if track is not None:
+        if track is not None and track != "":
             self.track = int(track)
             self.track_timestamp = self.timestamp
         else:

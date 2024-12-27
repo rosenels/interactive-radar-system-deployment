@@ -41,11 +41,11 @@ def operate():
 
     if not quit:
         if FLIGHT_DATA_INPUT_MODE.upper() == "RAW-IN":
-            if FLIGHT_DATA_PORT == 0:
+            if int(FLIGHT_DATA_PORT) == 0:
                 FLIGHT_DATA_PORT = RAW_IN_DEFAULT_PORT
             loop = raw_in_loop
         elif FLIGHT_DATA_INPUT_MODE.upper() == "SBS":
-            if FLIGHT_DATA_PORT == 0:
+            if int(FLIGHT_DATA_PORT) == 0:
                 FLIGHT_DATA_PORT = SBS_DEFAULT_PORT
             loop = sbs_in_loop
         else:
@@ -56,7 +56,7 @@ def operate():
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((FLIGHT_DATA_HOST, FLIGHT_DATA_PORT))
             sock = sock.makefile(mode="r")
-            print("Connected to %s:%d\n" % (FLIGHT_DATA_HOST, FLIGHT_DATA_PORT))
+            print(f"Connected to {FLIGHT_DATA_HOST}:{FLIGHT_DATA_PORT}\n")
         except:
             # print("Connection refused\n")
             return
@@ -79,6 +79,19 @@ def keep_operating():
     global flights, flights_instructions, receiver_thread, quit
 
     with Session(db_engine) as session:
+        try:
+            flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS)).order_by(FlightInformation.timestamp.desc())))
+
+            flights_icao_addresses = []
+
+            for flight in flights_in_db:
+                if flight.icao not in flights_icao_addresses:
+                    flights_instructions[flight.icao] = flight.atc_instructions_id
+                    flights_icao_addresses.append(flight.icao)
+
+        except Exception as e:
+            print(f"{str(type(e))}: {str(e)}\n{traceback.format_exc()}")
+
         while not quit:
             flights_instructions_copy = flights_instructions.copy()
             timestamp = datetime.now()

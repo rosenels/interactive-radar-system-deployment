@@ -41,21 +41,22 @@ def control_flight(flight_icao):
         new_instructions = InstructionsFromATC(
             atc_user_id=atc_user_id,
             atc_user_fullname=authentication.get_user_fullname(parsed_token),
+            flight_icao=flight_icao,
             altitude=data.get("altitude", None),
             ground_speed=data.get("ground_speed", None),
             track=data.get("track", None)
         )
 
         if prev_instructions is not None:
-            if prev_instructions.altitude == new_instructions.altitude or new_instructions.altitude is None:
+            if data.get("altitude", None) != "" and (prev_instructions.altitude == new_instructions.altitude or new_instructions.altitude is None):
                 new_instructions.altitude = prev_instructions.altitude
                 new_instructions.altitude_timestamp = prev_instructions.altitude_timestamp
 
-            if prev_instructions.ground_speed == new_instructions.ground_speed or new_instructions.ground_speed is None:
+            if data.get("ground_speed", None) != "" and (prev_instructions.ground_speed == new_instructions.ground_speed or new_instructions.ground_speed is None):
                 new_instructions.ground_speed = prev_instructions.ground_speed
                 new_instructions.ground_speed_timestamp = prev_instructions.ground_speed_timestamp
 
-            if prev_instructions.track == new_instructions.track or new_instructions.track is None:
+            if data.get("track", None) != "" and (prev_instructions.track == new_instructions.track or new_instructions.track is None):
                 new_instructions.track = prev_instructions.track
                 new_instructions.track_timestamp = prev_instructions.track_timestamp
 
