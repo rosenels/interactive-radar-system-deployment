@@ -64,11 +64,18 @@ def control_flight(flight_icao):
 
         flight = FlightInformation.from_other_flight_info(flight)
         flight.atc_instructions = new_instructions
-        flight.timestamp = datetime.now()
+
+        timestamp = datetime.now()
+        flight.timestamp = timestamp
+
         session.add(flight)
 
         session.commit()
-        receiver.flights_instructions[flight_icao] = new_instructions.id
+
+        receiver.flights_instructions[flight_icao] = {
+            "id": new_instructions.id,
+            "timestamp": timestamp
+        }
 
     return make_response({"message": "Instructions were applied successfully"}, 200)
 
@@ -95,11 +102,18 @@ def stop_controlling_flight(flight_icao, token):
 
         flight = FlightInformation.from_other_flight_info(flight)
         flight.atc_instructions_id = None
-        flight.timestamp = datetime.now()
+
+        timestamp = datetime.now()
+        flight.timestamp = timestamp
+
         session.add(flight)
 
         session.commit()
-        receiver.flights_instructions[flight_icao] = None
+
+        receiver.flights_instructions[flight_icao] = {
+            "id": None,
+            "timestamp": timestamp
+        }
 
     return make_response({"message": "Instructions were deleted successfully"}, 200)
 

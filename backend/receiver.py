@@ -41,11 +41,11 @@ def operate():
 
     if not quit:
         if FLIGHT_DATA_INPUT_MODE.upper() == "RAW-IN":
-            if int(FLIGHT_DATA_PORT) == 0:
+            if FLIGHT_DATA_PORT == 0:
                 FLIGHT_DATA_PORT = RAW_IN_DEFAULT_PORT
             loop = raw_in_loop
         elif FLIGHT_DATA_INPUT_MODE.upper() == "SBS":
-            if int(FLIGHT_DATA_PORT) == 0:
+            if FLIGHT_DATA_PORT == 0:
                 FLIGHT_DATA_PORT = SBS_DEFAULT_PORT
             loop = sbs_in_loop
         else:
@@ -86,16 +86,25 @@ def keep_operating():
 
             for flight in flights_in_db:
                 if flight.icao not in flights_icao_addresses:
-                    flights_instructions[flight.icao] = flight.atc_instructions_id
+                    flights_instructions[flight.icao] = {
+                        "id": flight.atc_instructions_id,
+                        "timestamp": flight.timestamp
+                    }
                     flights_icao_addresses.append(flight.icao)
 
         except Exception as e:
             print(f"{str(type(e))}: {str(e)}\n{traceback.format_exc()}")
 
         while not quit:
+            current_timestamp = datetime.now()
+
+            for flight_icao in flights_instructions.keys():
+                if flights_instructions[flight_icao]["timestamp"] < current_timestamp - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS):
+                    flights_instructions.pop(flight_icao)
+
             flights_instructions_copy = flights_instructions.copy()
-            timestamp = datetime.now()
-            while timestamp > datetime.now() - timedelta(seconds=RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS / 2):
+
+            while current_timestamp > datetime.now() - timedelta(seconds=RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS / 2):
                 if flights_instructions_copy != flights_instructions or quit:
                     break
 
@@ -122,7 +131,7 @@ def keep_operating():
                         flights[i]["instructions"] = None
 
                         if temp_flight.icao in flights_instructions.keys():
-                            temp_flight.atc_instructions_id = flights_instructions[temp_flight.icao]
+                            temp_flight.atc_instructions_id = flights_instructions[temp_flight.icao]["id"]
 
                         if temp_flight.atc_instructions_id is not None:
                             for instruction in atc_instructions_in_db:

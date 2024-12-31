@@ -14,7 +14,7 @@ load_dotenv()
 
 FLIGHT_DATA_INPUT_MODE = os.getenv("FLIGHT_DATA_INPUT_MODE") # "raw-in" or "sbs"
 FLIGHT_DATA_HOST = os.getenv("FLIGHT_DATA_HOST")
-FLIGHT_DATA_PORT = os.getenv("FLIGHT_DATA_PORT") # 0 means the default port for the selected input mode
+FLIGHT_DATA_PORT = int(os.getenv("FLIGHT_DATA_PORT")) # 0 means the default port for the selected input mode
 
 RAW_IN_DEFAULT_PORT = 30002
 SBS_DEFAULT_PORT = 30003
