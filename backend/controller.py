@@ -39,24 +39,29 @@ def control_flight(flight_icao):
                 return make_response({"message": "This flight is controlled by another ATC now"}, 403)
 
         new_instructions = InstructionsFromATC(
-            atc_user_id=atc_user_id,
-            atc_user_fullname=authentication.get_user_fullname(parsed_token),
-            flight_icao=flight_icao,
-            altitude=data.get("altitude", None),
-            ground_speed=data.get("ground_speed", None),
-            track=data.get("track", None)
+            atc_user_id = atc_user_id,
+            atc_user_fullname = authentication.get_user_fullname(parsed_token),
+            initial_altitude = flight.altitude,
+            altitude = data.get("altitude", None),
+            initial_ground_speed = flight.ground_speed,
+            ground_speed = data.get("ground_speed", None),
+            initial_track = flight.track,
+            track = data.get("track", None)
         )
 
         if prev_instructions is not None:
             if data.get("altitude", None) != "" and (prev_instructions.altitude == new_instructions.altitude or new_instructions.altitude is None):
+                new_instructions.initial_altitude = prev_instructions.initial_altitude
                 new_instructions.altitude = prev_instructions.altitude
                 new_instructions.altitude_timestamp = prev_instructions.altitude_timestamp
 
             if data.get("ground_speed", None) != "" and (prev_instructions.ground_speed == new_instructions.ground_speed or new_instructions.ground_speed is None):
+                new_instructions.initial_ground_speed = prev_instructions.initial_ground_speed
                 new_instructions.ground_speed = prev_instructions.ground_speed
                 new_instructions.ground_speed_timestamp = prev_instructions.ground_speed_timestamp
 
             if data.get("track", None) != "" and (prev_instructions.track == new_instructions.track or new_instructions.track is None):
+                new_instructions.initial_track = prev_instructions.initial_track
                 new_instructions.track = prev_instructions.track
                 new_instructions.track_timestamp = prev_instructions.track_timestamp
 

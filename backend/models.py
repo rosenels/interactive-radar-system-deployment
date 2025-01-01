@@ -156,26 +156,28 @@ class InstructionsFromATC(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     atc_user_id: Mapped[str] = mapped_column(Text)
     atc_user_fullname: Mapped[str] = mapped_column(Text)
-    flight_icao: Mapped[str] = mapped_column(Text)
     timestamp: Mapped[DateTime] = mapped_column(DateTime)
 
+    initial_altitude: Mapped[int] = mapped_column(Integer, nullable=True)
     altitude: Mapped[int] = mapped_column(Integer, nullable=True)
     altitude_timestamp: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
+    initial_ground_speed: Mapped[int] = mapped_column(Integer, nullable=True)
     ground_speed: Mapped[int] = mapped_column(Integer, nullable=True)
     ground_speed_timestamp: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
+    initial_track: Mapped[int] = mapped_column(Integer, nullable=True)
     track: Mapped[int] = mapped_column(Integer, nullable=True)
     track_timestamp: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
     flight_info: Mapped[List["FlightInformation"]] = relationship(back_populates="atc_instructions")
 
-    def __init__(self, atc_user_id, atc_user_fullname, flight_icao, altitude, ground_speed, track):
+    def __init__(self, atc_user_id, atc_user_fullname, initial_altitude, altitude, initial_ground_speed, ground_speed, initial_track, track):
         self.atc_user_id = atc_user_id
         self.atc_user_fullname = atc_user_fullname
-        self.flight_icao = flight_icao
         self.timestamp = datetime.now()
 
+        self.initial_altitude = initial_altitude
         if altitude is not None and altitude != "":
             self.altitude = int(altitude)
             self.altitude_timestamp = self.timestamp
@@ -183,6 +185,7 @@ class InstructionsFromATC(Base):
             self.altitude = None
             self.altitude_timestamp = None
 
+        self.initial_ground_speed = initial_ground_speed
         if ground_speed is not None and ground_speed != "":
             self.ground_speed = int(ground_speed)
             self.ground_speed_timestamp = self.timestamp
@@ -190,6 +193,7 @@ class InstructionsFromATC(Base):
             self.ground_speed = None
             self.ground_speed_timestamp = None
 
+        self.initial_track = initial_track
         if track is not None and track != "":
             self.track = int(track)
             self.track_timestamp = self.timestamp
