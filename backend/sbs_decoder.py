@@ -52,7 +52,7 @@ def update_flights(flight=None):
     remove_flight(icao)
 
     for i in range(len(flights)):
-        if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=settings.MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
+        if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=settings.MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS):
             updated_flights.append(flights[i])
 
     if icao is not None:

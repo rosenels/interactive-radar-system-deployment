@@ -157,6 +157,7 @@ class InstructionsFromATC(Base):
     atc_user_id: Mapped[str] = mapped_column(Text)
     atc_user_fullname: Mapped[str] = mapped_column(Text)
     timestamp: Mapped[DateTime] = mapped_column(DateTime)
+    flight_last_seen_at: Mapped[DateTime] = mapped_column(DateTime)
 
     initial_altitude: Mapped[int] = mapped_column(Integer, nullable=True)
     altitude: Mapped[int] = mapped_column(Integer, nullable=True)
@@ -172,10 +173,11 @@ class InstructionsFromATC(Base):
 
     flight_info: Mapped[List["FlightInformation"]] = relationship(back_populates="atc_instructions")
 
-    def __init__(self, atc_user_id, atc_user_fullname, initial_altitude, altitude, initial_ground_speed, ground_speed, initial_track, track):
+    def __init__(self, atc_user_id, atc_user_fullname, flight_last_seen_at, initial_altitude, altitude, initial_ground_speed, ground_speed, initial_track, track):
         self.atc_user_id = atc_user_id
         self.atc_user_fullname = atc_user_fullname
         self.timestamp = datetime.now()
+        self.flight_last_seen_at = flight_last_seen_at
 
         self.initial_altitude = initial_altitude
         if altitude is not None and altitude != "":

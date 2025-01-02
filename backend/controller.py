@@ -23,7 +23,7 @@ def control_flight(flight_icao):
         return make_response({"message": "Unauthorized"}, 401)
 
     with Session(db_engine) as session:
-        flight = session.scalar(select(FlightInformation).where(FlightInformation.icao == flight_icao).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS)).order_by(FlightInformation.timestamp.desc()))
+        flight = session.scalar(select(FlightInformation).where(FlightInformation.icao == flight_icao).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS)).order_by(FlightInformation.timestamp.desc()))
 
         if flight is None:
             return make_response({"message": "There is no flight with this ICAO address"}, 404)
@@ -41,6 +41,7 @@ def control_flight(flight_icao):
         new_instructions = InstructionsFromATC(
             atc_user_id = atc_user_id,
             atc_user_fullname = authentication.get_user_fullname(parsed_token),
+            flight_last_seen_at = flight.timestamp,
             initial_altitude = flight.altitude,
             altitude = data.get("altitude", None),
             initial_ground_speed = flight.ground_speed,

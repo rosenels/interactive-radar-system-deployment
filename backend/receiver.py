@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-import socket, threading, time, traceback
+import socket, threading, traceback
 from settings import *
 from models import *
 # import raw_decoder
@@ -35,6 +35,7 @@ def sbs_in_loop(sock):
 quit = False
 sock = None
 receiver_thread = None
+validator_thread = None
 
 def operate():
     global FLIGHT_DATA_PORT, sock, quit
@@ -109,7 +110,7 @@ def keep_operating():
                     break
 
             try:
-                flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=0.8 * MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS)).order_by(FlightInformation.timestamp.desc())))
+                flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=0.8 * MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS)).order_by(FlightInformation.timestamp.desc())))
 
                 updated_flights = []
                 flights_icao_addresses = []
@@ -122,10 +123,10 @@ def keep_operating():
                 flights_in_db = updated_flights
                 updated_flights = []
 
-                atc_instructions_in_db = list(session.scalars(select(InstructionsFromATC).where(InstructionsFromATC.timestamp > datetime.now() - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS)).order_by(InstructionsFromATC.timestamp.desc())))
+                atc_instructions_in_db = list(session.scalars(select(InstructionsFromATC).where(InstructionsFromATC.flight_last_seen_at > datetime.now() - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS)).order_by(InstructionsFromATC.timestamp.desc())))
 
                 for i in range(len(flights)):
-                    if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS):
+                    if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS):
                         temp_flight = FlightInformation.from_flight_dict(flights[i])
 
                         flights[i]["instructions"] = None
@@ -136,6 +137,7 @@ def keep_operating():
                         if temp_flight.atc_instructions_id is not None:
                             for instruction in atc_instructions_in_db:
                                 if instruction.id == temp_flight.atc_instructions_id:
+                                    instruction.flight_last_seen_at = temp_flight.timestamp
                                     flights[i]["instructions"] = {}
                                     flights[i]["instructions"]["id"] = instruction.id
                                     flights[i]["instructions"]["atc_user_id"] = instruction.atc_user_id
@@ -169,15 +171,12 @@ def keep_operating():
                 print(f"{str(type(e))}: {str(e)}\n{traceback.format_exc()}")
 
 def start():
-    global receiver_thread, quit
+    global receiver_thread, validator_thread, quit
     quit = False
     receiver_thread = threading.Thread(target=operate, daemon=True)
     receiver_thread.start()
     validator_thread = threading.Thread(target=keep_operating)
     validator_thread.start()
-    time.sleep(1) # wait 1 second because in this period it is possible: quit = True
-    if quit:
-        exit()
 
 def stop():
     global quit, sock
@@ -189,7 +188,10 @@ def stop():
     # print(flights)
 
 def restart():
+    global receiver_thread, validator_thread
     stop()
+    while receiver_thread.is_alive() or validator_thread.is_alive():
+        pass
     start()
 
 if __name__ == "__main__":
