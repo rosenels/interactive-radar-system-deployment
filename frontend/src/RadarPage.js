@@ -53,6 +53,7 @@ function RadarPage() {
   const playBellSound = useSound(Bell).playSound;
 
   useEffect(() => {
+    hideFlightInfo();
     loadConfiguration();
 
     // Initialize the map when component mounts
@@ -139,7 +140,7 @@ function RadarPage() {
       const iconSize = isGroundVehicle ? [20, 20] : [30, 30];
 
       // Ensure latitude and longitude are not null
-      if (flight.latitude == null || flight.longitude == null) {
+      if (flight.latitude === null || flight.longitude === null) {
         continue;
       }
 

@@ -72,7 +72,7 @@ function SettingsPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", marginTop: "50px" }}>
         <p style={{ margin: "0 10px", textAlign: "right" }}>Set flights update time in seconds:</p>
         <input type="number" value={flightsUpdateInterval} onChange={(e) => setFlightsUpdateInterval(e.target.value)} style={{ margin: "0 10px", width: "300px" }}/>
-        <p style={{ margin: "0 10px", textAlign: "right" }}>Set maximal time interval between two messages before flight considered to lost:</p>
+        <p style={{ margin: "0 10px", textAlign: "right" }}>Set maximum time interval between two messages before flight considered as lost:</p>
         <input type="number" value={maxTimeInterval} onChange={(e) => setMaxTimeInterval(e.target.value)} style={{ margin: "0 10px", width: "300px" }}/>
       </div>
       <button onClick={saveConfiguration} style={{ margin: "40px" }}>Save</button>

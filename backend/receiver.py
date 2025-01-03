@@ -4,6 +4,7 @@ from settings import *
 from models import *
 # import raw_decoder
 import sbs_decoder
+import validator
 
 flights = []
 flights_instructions = {}
@@ -138,14 +139,7 @@ def keep_operating():
                             for instruction in atc_instructions_in_db:
                                 if instruction.id == temp_flight.atc_instructions_id:
                                     instruction.flight_last_seen_at = temp_flight.timestamp
-                                    flights[i]["instructions"] = {}
-                                    flights[i]["instructions"]["id"] = instruction.id
-                                    flights[i]["instructions"]["atc_user_id"] = instruction.atc_user_id
-                                    flights[i]["instructions"]["atc_user_fullname"] = instruction.atc_user_fullname
-                                    flights[i]["instructions"]["altitude"] = instruction.altitude
-                                    flights[i]["instructions"]["ground_speed"] = instruction.ground_speed
-                                    flights[i]["instructions"]["track"] = instruction.track
-                                    flights[i]["instructions"]["timestamp"] = instruction.timestamp
+                                    validator.validate_instructions(flights[i], instruction)
                                     break
 
                         flight_not_found = True
