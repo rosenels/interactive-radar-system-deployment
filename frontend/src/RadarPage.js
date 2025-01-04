@@ -8,24 +8,28 @@ import { Context } from "./Context";
 let spectatedFlightIcao = null;
 let foundSpectatedFlight = false;
 
-let newWarnings = []
 let rememberedWarnings = []
 
-function addWarningIfNotRemembered(icao, callsign, parameter, requestedValue) {
+function addWarningInListIfNotRemembered(warningsList, icao, callsign, parameter, requestedValue, rememberTimeInSeconds) {
   let found = false;
-  for (let i = 0; i < newWarnings.length; i++) {
-    if (newWarnings[i].icao === icao) {
+
+  rememberedWarnings.forEach((warningItem, index, arr) => {
+    if (new Date() - warningItem.datetime > rememberTimeInSeconds * 1000) {
+      arr.splice(index, 1); // remove this item
+    }
+    else if (warningItem.icao === icao) {
       if (callsign !== null) {
-        newWarnings[i].callsign = callsign;
+        warningItem.callsign = callsign;
       }
-      if (newWarnings[i].parameter === parameter) {
-        newWarnings[i].requestedValue = requestedValue;
+      if (warningItem.parameter === parameter) {
+        warningItem.requestedValue = requestedValue;
         found = true;
       }
     }
-  }
+  });
+
   if (!found) {
-    newWarnings.push({
+    warningsList.push({
       icao: icao,
       callsign: callsign,
       parameter: parameter,
@@ -72,6 +76,10 @@ function RadarPage() {
   const [flightOptionsDivDisplay, setFlightOptionsDivDisplay] = useState("none");
   const [flightControlsDivDisplay, setFlightControlsDivDisplay] = useState("none");
   const [flightControlsSaveButtonDisplay, setFlightControlsSaveButtonDisplay] = useState("none");
+  const [flightControlsReadOnly, setFlightControlsReadOnly] = useState(true);
+
+  const [warningMessageDivDisplay, setWarningMessageDivDisplay] = useState("none");
+  const [warningMessageInnerHTML, setWarningMessageInnerHTML] = useState("");
 
   const [spectatedFlightControllerUser, setSpectatedFlightControllerUser] = useState(null);
 
@@ -155,6 +163,8 @@ function RadarPage() {
     const flights = data.flights;
     foundSpectatedFlight = false;
 
+    let newWarnings = [];
+
     for (const i in flights) {
       const flight = flights[i];
 
@@ -176,8 +186,18 @@ function RadarPage() {
 
       if (flight.instructions !== null) {
         if (flight.instructions.altitude_valid === false) {
-          if (new Date() - (new Date(flight.instructions.altitude_due)) > rememberedWarningsIntervalInSeconds * 1000) {
-            addWarningIfNotRemembered(flight.icao, flight.callsign, "altitude", flight.instructions.altitude);
+          if (new Date() > (new Date(flight.instructions.altitude_due.split("GMT")[0]))) {
+            addWarningInListIfNotRemembered(newWarnings, flight.icao, flight.callsign, "altitude", `${flight.instructions.altitude} ft`, rememberedWarningsIntervalInSeconds);
+          }
+        }
+        if (flight.instructions.ground_speed_valid === false) {
+          if (new Date() > (new Date(flight.instructions.ground_speed_due.split("GMT")[0]))) {
+            addWarningInListIfNotRemembered(newWarnings, flight.icao, flight.callsign, "ground_speed", `${flight.instructions.ground_speed} knots`, rememberedWarningsIntervalInSeconds);
+          }
+        }
+        if (flight.instructions.track_valid === false) {
+          if (new Date() > (new Date(flight.instructions.track_due.split("GMT")[0]))) {
+            addWarningInListIfNotRemembered(newWarnings, flight.icao, flight.callsign, "track", `${flight.instructions.track} °`, rememberedWarningsIntervalInSeconds);
           }
         }
       }
@@ -231,8 +251,19 @@ function RadarPage() {
       }
     }
 
+    if (newWarnings.length > 0) {
+      let warningMessage = "The following warnings are available:<br>";
+
+      newWarnings.forEach(warning => {
+        warningMessage += `<br>Flight ${warning.callsign !== null ? warning.callsign : "---"} (${warning.icao}) is not at requested ${warning.parameter} at ${warning.requestedValue}`;
+        rememberedWarnings.push(warning);
+      });
+
+      bellNotifier(warningMessage);
+    }
+
     if (!foundSpectatedFlight && spectatedFlightIcao) {
-      hideFlightInfo("The spectated flight was lost!");
+      hideFlightInfo();
     }
   };
 
@@ -295,11 +326,13 @@ function RadarPage() {
     if (flight.instructions !== null) {
       if (flight.instructions.atc_user_id === context.kc.subject) {
         setSpectatedFlightControllerUser(flight.instructions.atc_user_id);
+        setFlightControlsReadOnly(false);
         setFlightControlsDivDisplay("block");
       }
       else {
         setSpectatedFlightControllerUser(flight.instructions.atc_user_fullname);
-        setFlightControlsDivDisplay("none");
+        setFlightControlsReadOnly(true);
+        setFlightControlsDivDisplay("block");
       }
     }
     else {
@@ -313,21 +346,16 @@ function RadarPage() {
     setFlightOptionsDivDisplay("block");
   };
 
-  function hideFlightInfo(message = undefined) {
+  function hideFlightInfo() {
     setFlightOptionsDivDisplay("none");
     setFlightDetails("");
     spectatedFlightIcao = null;
-
-    if (message !== undefined) {
-      bellNotifier(message);
-    }
   };
 
-  function bellNotifier(message) {
+  function bellNotifier(messageInnerHTML) {
     playBellSound();
-    setTimeout(() => {
-      alert(message);
-    }, 10);
+    setWarningMessageInnerHTML(messageInnerHTML);
+    setWarningMessageDivDisplay("block");
   };
 
   async function controlFlight(instructions = undefined) {
@@ -391,25 +419,28 @@ function RadarPage() {
           { spectatedFlightControllerUser === null ? (
             <button onClick={controlFlight} style={{ height: "20px" }}>Control this flight</button>
           ) : spectatedFlightControllerUser === context.kc.subject ? (
-            <button onClick={stopControllingFlight} style={{ height: "20px" }}>Stop controlling this flight</button>
+            <button onClick={stopControllingFlight} style={{ height: "20px", marginBottom: "34px" }}>Stop controlling this flight</button>
           ) : (
-            <p>This flight is controlled by: {spectatedFlightControllerUser}</p>
+            <p style={{ height: "20px", marginBottom: "20px" }}>This flight is controlled by: {spectatedFlightControllerUser}</p>
           )}
-          <div id="flight-controls" style={{ display: flightControlsDivDisplay }}>
+          <div id="flight-controls" style={{ display: flightControlsDivDisplay, marginTop: "2px" }}>
+            <input type="number" value={instructedAltitude} readOnly={flightControlsReadOnly} onChange={(e) => {setInstructedAltitude(e.target.value); setFlightControlsSaveButtonDisplay("block")}} style={{ height: "14px", width: "100px" }}/>
+            <button onClick={() => {if (instructedAltitude !== "") {setInstructedAltitude(""); setFlightControlsSaveButtonDisplay("block")}}} style={{ display: flightControlsReadOnly ? "none" : "inline-block", height: "18px", position: "relative", "top": "1px" }}>x</button> feet
             <br/>
+            <input type="number" value={instructedSpeed} readOnly={flightControlsReadOnly} onChange={(e) => {setInstructedSpeed(e.target.value); setFlightControlsSaveButtonDisplay("block")}} style={{ height: "14px", width: "100px" }}/>
+            <button onClick={() => {if (instructedSpeed !== "") {setInstructedSpeed(""); setFlightControlsSaveButtonDisplay("block")}}} style={{ display: flightControlsReadOnly ? "none" : "inline-block", height: "18px", position: "relative", "top": "1px" }}>x</button> knots
             <br/>
-            <input type="number" value={instructedAltitude} onChange={(e) => {setInstructedAltitude(e.target.value); setFlightControlsSaveButtonDisplay("block")}} style={{height: "14px", width: "100px"}}/>
-            <button onClick={() => {if (instructedAltitude !== "") {setInstructedAltitude(""); setFlightControlsSaveButtonDisplay("block")}}} style={{height: "18px", position: "relative", "top": "1px"}}>x</button> feet
+            <input type="number" value={instructedTrack} readOnly={flightControlsReadOnly} onChange={(e) => {setInstructedTrack(e.target.value); setFlightControlsSaveButtonDisplay("block")}} style={{ height: "14px", width: "100px" }}/>
+            <button onClick={() => {if (instructedTrack !== "") {setInstructedTrack(""); setFlightControlsSaveButtonDisplay("block")}}} style={{ display: flightControlsReadOnly ? "none" : "inline-block", height: "18px", position: "relative", "top": "1px" }}>x</button> °
             <br/>
-            <input type="number" value={instructedSpeed} onChange={(e) => {setInstructedSpeed(e.target.value); setFlightControlsSaveButtonDisplay("block")}} style={{height: "14px", width: "100px"}}/>
-            <button onClick={() => {if (instructedSpeed !== "") {setInstructedSpeed(""); setFlightControlsSaveButtonDisplay("block")}}} style={{height: "18px", position: "relative", "top": "1px"}}>x</button> knots
-            <br/>
-            <input type="number" value={instructedTrack} onChange={(e) => {setInstructedTrack(e.target.value); setFlightControlsSaveButtonDisplay("block")}} style={{height: "14px", width: "100px"}}/>
-            <button onClick={() => {if (instructedTrack !== "") {setInstructedTrack(""); setFlightControlsSaveButtonDisplay("block")}}} style={{height: "18px", position: "relative", "top": "1px"}}>x</button> °
-            <br/>
-            <button onClick={() => controlFlight({altitude: instructedAltitude, ground_speed: instructedSpeed, track: instructedTrack})} style={{display: flightControlsSaveButtonDisplay}}>Save</button>
+            <button onClick={() => controlFlight({altitude: instructedAltitude, ground_speed: instructedSpeed, track: instructedTrack})} style={{ display: flightControlsSaveButtonDisplay }}>Save</button>
           </div>
         </div>
+      </div>
+      <div id="warning-message-container" style={{ display: warningMessageDivDisplay, position: "fixed", top: "55%", left: "5%", width: "90%", height: "40%", borderRadius: "20px", backgroundColor: "#ded0ab" }}>
+        <h1 style={{ margin: "20px", textAlign: "center" }}>Warning</h1>
+        <div id="warning-message-text" dangerouslySetInnerHTML={{ __html: warningMessageInnerHTML }} style={{ margin: "20px", height: "45%", overflowY: "auto" }}></div>
+        <button onClick={() => {setWarningMessageDivDisplay("none")}} style={{ position: "fixed", bottom: "8%", left: "45%", width: "10%" }}>OK</button>
       </div>
     </div>
   );
