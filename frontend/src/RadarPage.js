@@ -8,6 +8,33 @@ import { Context } from "./Context";
 let spectatedFlightIcao = null;
 let foundSpectatedFlight = false;
 
+let newWarnings = []
+let rememberedWarnings = []
+
+function addWarningIfNotRemembered(icao, callsign, parameter, requestedValue) {
+  let found = false;
+  for (let i = 0; i < newWarnings.length; i++) {
+    if (newWarnings[i].icao === icao) {
+      if (callsign !== null) {
+        newWarnings[i].callsign = callsign;
+      }
+      if (newWarnings[i].parameter === parameter) {
+        newWarnings[i].requestedValue = requestedValue;
+        found = true;
+      }
+    }
+  }
+  if (!found) {
+    newWarnings.push({
+      icao: icao,
+      callsign: callsign,
+      parameter: parameter,
+      requestedValue: requestedValue,
+      datetime: new Date()
+    });
+  }
+}
+
 function useSound(audioSource) {
   const soundRef = useRef();
 
@@ -38,7 +65,9 @@ function RadarPage() {
   const mapRef = useRef(null);
 
   const [flightDetails, setFlightDetails] = useState("");
+
   const [flightsUpdateIntervalInSeconds, setFlightsUpdateIntervalInSeconds] = useState(5);
+  const [rememberedWarningsIntervalInSeconds, setRememberedWarningsIntervalInSeconds] = useState(60);
 
   const [flightOptionsDivDisplay, setFlightOptionsDivDisplay] = useState("none");
   const [flightControlsDivDisplay, setFlightControlsDivDisplay] = useState("none");
@@ -92,6 +121,7 @@ function RadarPage() {
       return;
     }
     setFlightsUpdateIntervalInSeconds(data.configuration.RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS);
+    setRememberedWarningsIntervalInSeconds(data.configuration.WARNING_REMEMBER_INTERVAL_IN_SECONDS);
   }
 
   async function fetchAndDisplayFlights() {
@@ -142,6 +172,14 @@ function RadarPage() {
       // Ensure latitude and longitude are not null
       if (flight.latitude === null || flight.longitude === null) {
         continue;
+      }
+
+      if (flight.instructions !== null) {
+        if (flight.instructions.altitude_valid === false) {
+          if (new Date() - (new Date(flight.instructions.altitude_due)) > rememberedWarningsIntervalInSeconds * 1000) {
+            addWarningIfNotRemembered(flight.icao, flight.callsign, "altitude", flight.instructions.altitude);
+          }
+        }
       }
 
       try {
