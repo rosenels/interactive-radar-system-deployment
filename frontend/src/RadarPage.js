@@ -11,22 +11,25 @@ let foundSpectatedFlight = false;
 let rememberedWarnings = []
 
 function addWarningInListIfNotRemembered(warningsList, icao, callsign, parameter, requestedValue, rememberTimeInSeconds) {
+  let currentDatetime = new Date();
+
+  rememberedWarnings = rememberedWarnings.filter((warningItem) => {
+    return currentDatetime - warningItem.datetime < rememberTimeInSeconds * 1000;
+  });
+
   let found = false;
 
-  rememberedWarnings.forEach((warningItem, index, arr) => {
-    if (new Date() - warningItem.datetime > rememberTimeInSeconds * 1000) {
-      arr.splice(index, 1); // remove this item
-    }
-    else if (warningItem.icao === icao) {
+  for (let i = 0; i < rememberedWarnings.length; i++) {
+    if (rememberedWarnings[i].icao === icao) {
       if (callsign !== null) {
-        warningItem.callsign = callsign;
+        rememberedWarnings[i].callsign = callsign;
       }
-      if (warningItem.parameter === parameter) {
-        warningItem.requestedValue = requestedValue;
+      if (rememberedWarnings[i].parameter === parameter) {
+        rememberedWarnings[i].requestedValue = requestedValue;
         found = true;
       }
     }
-  });
+  }
 
   if (!found) {
     warningsList.push({
@@ -251,7 +254,7 @@ function RadarPage() {
       }
     }
 
-    if (newWarnings.length > 0) {
+    if (newWarnings.length > 0 && warningMessageDivDisplay === "none") {
       let warningMessage = "The following warnings are available:<br>";
 
       newWarnings.forEach(warning => {
