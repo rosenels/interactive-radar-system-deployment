@@ -17,7 +17,10 @@ def is_token_active(parsed_token):
 
 def is_admin_user_token(parsed_token):
     if is_token_active(parsed_token):
-        return os.getenv("KEYCLOAK_ADMIN_USER_ROLE") in parsed_token["resource_access"][os.getenv("KEYCLOAK_ADMIN_USER_RESOURCE")]["roles"]
+        try:
+            return os.getenv("KEYCLOAK_ADMIN_USER_ROLE") in parsed_token["resource_access"][os.getenv("KEYCLOAK_ADMIN_USER_RESOURCE")]["roles"]
+        except:
+            pass
     return False
 
 def get_user_id(parsed_token):

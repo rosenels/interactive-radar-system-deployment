@@ -20,9 +20,6 @@ class FlightInformation(Base):
     __tablename__ = "flight_information"
     id: Mapped[int] = mapped_column(primary_key=True)
     icao: Mapped[str] = mapped_column(Text)
-    session_id: Mapped[int] = mapped_column(Integer, nullable=True)
-    aircraft_id: Mapped[int] = mapped_column(Integer, nullable=True)
-    flight_id: Mapped[int] = mapped_column(Integer, nullable=True)
     callsign: Mapped[str] = mapped_column(Text, nullable=True)
     altitude: Mapped[int] = mapped_column(Integer, nullable=True)
     ground_speed: Mapped[int] = mapped_column(Integer, nullable=True)
@@ -39,11 +36,8 @@ class FlightInformation(Base):
     atc_instructions_id: Mapped[int] = mapped_column(ForeignKey("atc_instructions.id"), nullable=True)
     atc_instructions: Mapped["InstructionsFromATC"] = relationship(back_populates="flight_info")
 
-    def __init__(self, icao, session_id, aircraft_id, flight_id, callsign, altitude, ground_speed, track, latitude, longitude, vertical_rate, squawk, alert_squawk_change, emergency_code, spi_ident, on_ground, timestamp, atc_instructions_id):
+    def __init__(self, icao, callsign, altitude, ground_speed, track, latitude, longitude, vertical_rate, squawk, alert_squawk_change, emergency_code, spi_ident, on_ground, timestamp, atc_instructions_id):
         self.icao = icao
-        self.session_id = session_id
-        self.aircraft_id = aircraft_id
-        self.flight_id = flight_id
         self.callsign = callsign
         self.altitude = altitude
         self.ground_speed = ground_speed
@@ -69,9 +63,6 @@ class FlightInformation(Base):
 
         return self(
             icao = flight_dict["icao"],
-            session_id = flight_dict["session_id"],
-            aircraft_id = flight_dict["aircraft_id"],
-            flight_id = flight_dict["flight_id"],
             callsign = flight_dict["callsign"],
             altitude = flight_dict["altitude"],
             ground_speed = flight_dict["ground_speed"],
@@ -93,9 +84,6 @@ class FlightInformation(Base):
         assert isinstance(other_flight_info, FlightInformation)
         return self(
             icao = other_flight_info.icao,
-            session_id = other_flight_info.session_id,
-            aircraft_id = other_flight_info.aircraft_id,
-            flight_id = other_flight_info.flight_id,
             callsign = other_flight_info.callsign,
             altitude = other_flight_info.altitude,
             ground_speed = other_flight_info.ground_speed,
@@ -115,12 +103,6 @@ class FlightInformation(Base):
     def __eq__(self, other):
         if isinstance(other, FlightInformation):
             if self.icao != other.icao:
-                return False
-            if self.session_id != other.session_id:
-                return False
-            if self.aircraft_id != other.aircraft_id:
-                return False
-            if self.flight_id != other.flight_id:
                 return False
             if self.callsign != other.callsign:
                 return False

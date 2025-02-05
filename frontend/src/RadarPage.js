@@ -190,17 +190,17 @@ function RadarPage() {
       if (flight.instructions !== null) {
         if (flight.instructions.altitude_valid === false) {
           if (new Date() > (new Date(flight.instructions.altitude_due.split("GMT")[0]))) {
-            addWarningInListIfNotRemembered(newWarnings, flight.icao, flight.callsign, "altitude", `${flight.instructions.altitude} ft`, rememberedWarningsIntervalInSeconds);
+            addWarningInListIfNotRemembered(newWarnings, flight.icao, flight.callsign, "altitude", `${flight.instructions.altitude} feet`, rememberedWarningsIntervalInSeconds);
           }
         }
         if (flight.instructions.ground_speed_valid === false) {
           if (new Date() > (new Date(flight.instructions.ground_speed_due.split("GMT")[0]))) {
-            addWarningInListIfNotRemembered(newWarnings, flight.icao, flight.callsign, "ground_speed", `${flight.instructions.ground_speed} knots`, rememberedWarningsIntervalInSeconds);
+            addWarningInListIfNotRemembered(newWarnings, flight.icao, flight.callsign, "ground speed", `${flight.instructions.ground_speed} knots`, rememberedWarningsIntervalInSeconds);
           }
         }
         if (flight.instructions.track_valid === false) {
           if (new Date() > (new Date(flight.instructions.track_due.split("GMT")[0]))) {
-            addWarningInListIfNotRemembered(newWarnings, flight.icao, flight.callsign, "track", `${flight.instructions.track} °`, rememberedWarningsIntervalInSeconds);
+            addWarningInListIfNotRemembered(newWarnings, flight.icao, flight.callsign, "track", `${flight.instructions.track}°`, rememberedWarningsIntervalInSeconds);
           }
         }
       }
@@ -226,25 +226,23 @@ function RadarPage() {
           foundSpectatedFlight = true;
 
           if (flight.instructions !== null) {
-            if (flight.instructions.atc_user_id === context.kc.subject) {
-              if (flight.instructions.altitude !== null) {
-                setInstructedAltitude(flight.instructions.altitude);
-              }
-              else {
-                setInstructedAltitude("");
-              }
-              if (flight.instructions.ground_speed !== null) {
-                setInstructedSpeed(flight.instructions.ground_speed);
-              }
-              else {
-                setInstructedSpeed("");
-              }
-              if (flight.instructions.track !== null) {
-                setInstructedTrack(flight.instructions.track);
-              }
-              else {
-                setInstructedTrack("");
-              }
+            if (flight.instructions.altitude !== null) {
+              setInstructedAltitude(flight.instructions.altitude);
+            }
+            else {
+              setInstructedAltitude("");
+            }
+            if (flight.instructions.ground_speed !== null) {
+              setInstructedSpeed(flight.instructions.ground_speed);
+            }
+            else {
+              setInstructedSpeed("");
+            }
+            if (flight.instructions.track !== null) {
+              setInstructedTrack(flight.instructions.track);
+            }
+            else {
+              setInstructedTrack("");
             }
           }
         });
@@ -335,6 +333,11 @@ function RadarPage() {
       else {
         setSpectatedFlightControllerUser(flight.instructions.atc_user_fullname);
         setFlightControlsReadOnly(true);
+
+        setInstructedAltitude(flight.instructions.altitude);
+        setInstructedSpeed(flight.instructions.ground_speed);
+        setInstructedTrack(flight.instructions.track);
+
         setFlightControlsDivDisplay("block");
       }
     }
@@ -372,7 +375,7 @@ function RadarPage() {
         jsonBody.track = instructions.track;
       }
 
-      await fetch(`${context.backendAddress}/instructions/${spectatedFlightIcao}`, {
+      let response = await fetch(`${context.backendAddress}/instructions/${spectatedFlightIcao}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -380,7 +383,14 @@ function RadarPage() {
         body: JSON.stringify(jsonBody)
       });
 
-      setFlightControlsSaveButtonDisplay("none");
+      if (response.status === 200) {
+        setFlightControlsSaveButtonDisplay("none");
+      }
+      else if (response.status === 400) {
+        let data = await response.json();
+
+        bellNotifier(data.message);
+      }
       fetchAndDisplayFlights();
     } catch (error) {
       // console.error(error);

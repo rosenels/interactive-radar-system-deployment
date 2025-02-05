@@ -5,6 +5,7 @@ import threading
 from settings import *
 import authentication
 import receiver
+import validator
 
 app = Flask(__name__)
 CORS(app)
@@ -65,6 +66,18 @@ def control_flight(flight_icao):
                 new_instructions.initial_track = prev_instructions.initial_track
                 new_instructions.track = prev_instructions.track
                 new_instructions.track_timestamp = prev_instructions.track_timestamp
+
+        if new_instructions.altitude is not None:
+            if not validator.is_valid_altitude(new_instructions.altitude) or new_instructions.altitude < MINIMUM_DESCENT_ALTITUDE_IN_FEET:
+                return make_response({"message": f"Instructed altitude of {new_instructions.altitude} feet is not valid, must be at least {MINIMUM_DESCENT_ALTITUDE_IN_FEET} feet (MDA)!"}, 400)
+
+        if new_instructions.ground_speed is not None:
+            if not validator.is_valid_ground_speed(new_instructions.ground_speed):
+                return make_response({"message": f"Instructed ground speed of {new_instructions.ground_speed} knots is not valid!"}, 400)
+
+        if new_instructions.track is not None:
+            if not validator.is_valid_track(new_instructions.track):
+                return make_response({"message": f"Instructed track of {new_instructions.track}° is not valid!"}, 400)
 
         session.add(new_instructions)
 
@@ -132,7 +145,7 @@ def get_configuration():
 
     parsed_token = authentication.parse_token(request.args.get("token"))
 
-    if not authentication.is_admin_user_token(parsed_token):
+    if not authentication.is_token_active(parsed_token):
         return make_response({"message": "Unauthorized"}, 401)
 
     with Session(db_engine) as session:
@@ -160,10 +173,20 @@ def update_configuration():
 
         for setting in saved_configuration: # update existing values for coresponding keys
             if setting.key in data.keys():
-                setting.value = data.pop(setting.key)
+                new_value = data.pop(setting.key)
+                try:
+                    new_value = abs(float(new_value))
+                except:
+                    pass
+                setting.value = new_value
 
         for key in data.keys(): # add new key - value pairs
-            session.add(Configuration(key, data[key]))
+            new_value = data[key]
+            try:
+                new_value = abs(float(new_value))
+            except:
+                pass
+            session.add(Configuration(key, new_value))
 
         session.commit()
 

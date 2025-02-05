@@ -33,7 +33,7 @@ function SettingsPage() {
       return;
     }
     setFlightsUpdateInterval(data.configuration.RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS);
-    setMaxTimeInterval(data.configuration.MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS);
+    setMaxTimeInterval(data.configuration.MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS);
   }
 
   async function saveConfiguration() {
@@ -46,7 +46,7 @@ function SettingsPage() {
         body: JSON.stringify({
           "token": context.kc.token,
           "RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS": flightsUpdateInterval,
-          "MAX_FLIGHT_UPDATE_INTERVAL_IN_SECONDS": maxTimeInterval
+          "MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS": maxTimeInterval
         })
       });
     }

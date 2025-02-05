@@ -5,10 +5,7 @@ import settings
 flights = []
 
 new_flight = {
-    "session_id": None,
-    "aircraft_id": None,
     "icao": None,
-    "flight_id": None,
     "last_datetime": None,
     "callsign": None,
     "altitude": None,
@@ -78,9 +75,9 @@ def parse_sbs_message(msg):
     if len(msg_parts) >= 22:
         icao = msg_parts[4]
         flight = get_flight(icao)
-        flight["session_id"] = prepare_value(flight["session_id"], msg_parts[2])
-        flight["aircraft_id"] = prepare_value(flight["aircraft_id"], msg_parts[3])
-        flight["flight_id"] = prepare_value(flight["flight_id"], msg_parts[5])
+        # flight["session_id"] = prepare_value(flight["session_id"], msg_parts[2])
+        # flight["aircraft_id"] = prepare_value(flight["aircraft_id"], msg_parts[3])
+        # flight["flight_id"] = prepare_value(flight["flight_id"], msg_parts[5])
         try:
             flight["last_datetime"] = prepare_value(flight["last_datetime"], parser.parse(f"{msg_parts[6]} {msg_parts[7]}"))
         except:

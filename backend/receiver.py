@@ -15,7 +15,8 @@ def raw_in_loop(sock):
     msg = sock.readline()
 
     if msg:
-        print(msg, end="")
+        if LOG_ALL_AIRCRAFT_MESSAGES:
+            print(msg, end="")
         # raw_decoder.parse_raw_message(msg)
         # flights = raw_decoder.flights
     else:
@@ -27,7 +28,8 @@ def sbs_in_loop(sock):
     msg = sock.readline()
 
     if msg:
-        print(msg, end="")
+        if LOG_ALL_AIRCRAFT_MESSAGES:
+            print(msg, end="")
         sbs_decoder.parse_sbs_message(msg)
         flights = sbs_decoder.flights
     else:
@@ -100,7 +102,7 @@ def keep_operating():
         while not quit:
             current_timestamp = datetime.now()
 
-            for flight_icao in flights_instructions.keys():
+            for flight_icao in flights_instructions.copy().keys():
                 if flights_instructions[flight_icao]["timestamp"] < current_timestamp - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS):
                     flights_instructions.pop(flight_icao)
 
@@ -126,11 +128,13 @@ def keep_operating():
 
                 atc_instructions_in_db = list(session.scalars(select(InstructionsFromATC).where(InstructionsFromATC.flight_last_seen_at > datetime.now() - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS)).order_by(InstructionsFromATC.timestamp.desc())))
 
-                for i in range(len(flights)):
-                    if flights[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS):
-                        temp_flight = FlightInformation.from_flight_dict(flights[i])
+                flights_copy = flights.copy()
 
-                        flights[i]["instructions"] = None
+                for i in range(len(flights_copy)):
+                    if flights_copy[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS):
+                        temp_flight = FlightInformation.from_flight_dict(flights_copy[i])
+
+                        flights_copy[i]["instructions"] = None
 
                         if temp_flight.icao in flights_instructions.keys():
                             temp_flight.atc_instructions_id = flights_instructions[temp_flight.icao]["id"]
@@ -139,20 +143,20 @@ def keep_operating():
                             for instruction in atc_instructions_in_db:
                                 if instruction.id == temp_flight.atc_instructions_id:
                                     instruction.flight_last_seen_at = temp_flight.timestamp
-                                    validator.validate_instructions(flights[i], instruction)
+                                    validator.validate_instructions(flights_copy[i], instruction)
                                     break
 
                         flight_not_found = True
                         for flight in flights_in_db:
                             if temp_flight == flight:
                                 flight_not_found = False
-                                flights_instructions.pop(temp_flight.icao, None)
+                                # flights_instructions.pop(temp_flight.icao, None)
                                 break
 
                         if flight_not_found:
                             session.add(temp_flight)
 
-                        updated_flights.append(flights[i])
+                        updated_flights.append(flights_copy[i])
 
                 flights = updated_flights
                 session.commit()
