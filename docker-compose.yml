@@ -11,8 +11,6 @@ services:
 
   keycloak:
     image: keycloak/keycloak:24.0.4
-    depends_on:
-      - database
     env_file:
       - keycloak.env
     ports:
