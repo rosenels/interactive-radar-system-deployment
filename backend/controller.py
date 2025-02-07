@@ -96,6 +96,10 @@ def control_flight(flight_icao):
             "timestamp": timestamp
         }
 
+        for flight in receiver.flights:
+            if flight["icao"] == flight_icao:
+                validator.validate_instructions(flight, new_instructions)
+
     return make_response({"message": "Instructions were applied successfully"}, 200)
 
 @app.route("/instructions/<string:flight_icao>/<string:token>", methods=["DELETE"])
@@ -133,6 +137,10 @@ def stop_controlling_flight(flight_icao, token):
             "id": None,
             "timestamp": timestamp
         }
+
+        for flight in receiver.flights:
+            if flight["icao"] == flight_icao:
+                flight["instructions"] = None
 
     return make_response({"message": "Instructions were deleted successfully"}, 200)
 
