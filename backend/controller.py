@@ -183,7 +183,7 @@ def update_configuration():
             if setting.key in data.keys():
                 new_value = data.pop(setting.key)
                 try:
-                    new_value = abs(float(new_value))
+                    new_value = float(new_value)
 
                     if new_value == int(new_value):
                         new_value = int(new_value)
@@ -194,7 +194,7 @@ def update_configuration():
         for key in data.keys(): # add new key - value pairs
             new_value = data[key]
             try:
-                new_value = abs(float(new_value))
+                new_value = float(new_value)
 
                 if new_value == int(new_value):
                     new_value = int(new_value)
