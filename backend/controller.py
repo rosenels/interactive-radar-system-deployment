@@ -184,6 +184,9 @@ def update_configuration():
                 new_value = data.pop(setting.key)
                 try:
                     new_value = abs(float(new_value))
+
+                    if new_value == int(new_value):
+                        new_value = int(new_value)
                 except:
                     pass
                 setting.value = new_value
@@ -192,6 +195,9 @@ def update_configuration():
             new_value = data[key]
             try:
                 new_value = abs(float(new_value))
+
+                if new_value == int(new_value):
+                    new_value = int(new_value)
             except:
                 pass
             session.add(Configuration(key, new_value))

@@ -4,6 +4,19 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from models import *
 
+load_dotenv()
+
+FLIGHT_DATA_INPUT_MODE = os.getenv("FLIGHT_DATA_INPUT_MODE") # "raw-in" or "sbs"
+FLIGHT_DATA_HOST = os.getenv("FLIGHT_DATA_HOST")
+FLIGHT_DATA_PORT = int(os.getenv("FLIGHT_DATA_PORT")) # 0 means the default port for the selected input mode
+
+RAW_IN_DEFAULT_PORT = 30002
+SBS_DEFAULT_PORT = 30003
+
+INITIAL_MAP_LATITUDE = 42.694771
+INITIAL_MAP_LONGITUDE = 23.413245
+INITIAL_MAP_ZOOM_LEVEL = 8
+
 RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS = 5
 
 MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS = 10
@@ -25,25 +38,48 @@ WARNING_REMEMBER_INTERVAL_IN_SECONDS = 60
 
 LOG_ALL_AIRCRAFT_MESSAGES = 0 # 0 means False, 1 means True
 
-load_dotenv()
-
-FLIGHT_DATA_INPUT_MODE = os.getenv("FLIGHT_DATA_INPUT_MODE") # "raw-in" or "sbs"
-FLIGHT_DATA_HOST = os.getenv("FLIGHT_DATA_HOST")
-FLIGHT_DATA_PORT = int(os.getenv("FLIGHT_DATA_PORT")) # 0 means the default port for the selected input mode
-
-RAW_IN_DEFAULT_PORT = 30002
-SBS_DEFAULT_PORT = 30003
-
-db_engine = create_engine(f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_DB_HOST')}:{os.getenv('POSTGRES_DB_PORT')}/{os.getenv('POSTGRES_DB')}")
-
-Base.metadata.create_all(db_engine) # Creates all tables that don't exist in the database
-
 def load_settings():
     with Session(db_engine) as session:
         saved_settings = list(session.scalars(select(Configuration)))
 
         all_keys = [element.key for element in saved_settings]
         all_values = [element.value for element in saved_settings]
+
+        global FLIGHT_DATA_INPUT_MODE
+        if "FLIGHT_DATA_INPUT_MODE" in all_keys:
+            FLIGHT_DATA_INPUT_MODE = all_values[all_keys.index("FLIGHT_DATA_INPUT_MODE")]
+        else:
+            session.add(Configuration("FLIGHT_DATA_INPUT_MODE", FLIGHT_DATA_INPUT_MODE))
+
+        global FLIGHT_DATA_HOST
+        if "FLIGHT_DATA_HOST" in all_keys:
+            FLIGHT_DATA_HOST = all_values[all_keys.index("FLIGHT_DATA_HOST")]
+        else:
+            session.add(Configuration("FLIGHT_DATA_HOST", FLIGHT_DATA_HOST))
+
+        global FLIGHT_DATA_PORT
+        if "FLIGHT_DATA_PORT" in all_keys:
+            FLIGHT_DATA_PORT = int(all_values[all_keys.index("FLIGHT_DATA_PORT")])
+        else:
+            session.add(Configuration("FLIGHT_DATA_PORT", FLIGHT_DATA_PORT))
+
+        global INITIAL_MAP_LATITUDE
+        if "INITIAL_MAP_LATITUDE" in all_keys:
+            INITIAL_MAP_LATITUDE = float(all_values[all_keys.index("INITIAL_MAP_LATITUDE")])
+        else:
+            session.add(Configuration("INITIAL_MAP_LATITUDE", INITIAL_MAP_LATITUDE))
+
+        global INITIAL_MAP_LONGITUDE
+        if "INITIAL_MAP_LONGITUDE" in all_keys:
+            INITIAL_MAP_LONGITUDE = float(all_values[all_keys.index("INITIAL_MAP_LONGITUDE")])
+        else:
+            session.add(Configuration("INITIAL_MAP_LONGITUDE", INITIAL_MAP_LONGITUDE))
+
+        global INITIAL_MAP_ZOOM_LEVEL
+        if "INITIAL_MAP_ZOOM_LEVEL" in all_keys:
+            INITIAL_MAP_ZOOM_LEVEL = float(all_values[all_keys.index("INITIAL_MAP_ZOOM_LEVEL")])
+        else:
+            session.add(Configuration("INITIAL_MAP_ZOOM_LEVEL", INITIAL_MAP_ZOOM_LEVEL))
 
         global RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS
         if "RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS" in all_keys:
@@ -111,24 +147,6 @@ def load_settings():
         else:
             session.add(Configuration("WARNING_REMEMBER_INTERVAL_IN_SECONDS", WARNING_REMEMBER_INTERVAL_IN_SECONDS))
 
-        global FLIGHT_DATA_INPUT_MODE
-        if "FLIGHT_DATA_INPUT_MODE" in all_keys:
-            FLIGHT_DATA_INPUT_MODE = all_values[all_keys.index("FLIGHT_DATA_INPUT_MODE")]
-        else:
-            session.add(Configuration("FLIGHT_DATA_INPUT_MODE", FLIGHT_DATA_INPUT_MODE))
-
-        global FLIGHT_DATA_HOST
-        if "FLIGHT_DATA_HOST" in all_keys:
-            FLIGHT_DATA_HOST = all_values[all_keys.index("FLIGHT_DATA_HOST")]
-        else:
-            session.add(Configuration("FLIGHT_DATA_HOST", FLIGHT_DATA_HOST))
-
-        global FLIGHT_DATA_PORT
-        if "FLIGHT_DATA_PORT" in all_keys:
-            FLIGHT_DATA_PORT = int(all_values[all_keys.index("FLIGHT_DATA_PORT")])
-        else:
-            session.add(Configuration("FLIGHT_DATA_PORT", FLIGHT_DATA_PORT))
-
         global LOG_ALL_AIRCRAFT_MESSAGES
         if "LOG_ALL_AIRCRAFT_MESSAGES" in all_keys:
             LOG_ALL_AIRCRAFT_MESSAGES = int(all_values[all_keys.index("LOG_ALL_AIRCRAFT_MESSAGES")])
@@ -136,5 +154,9 @@ def load_settings():
             session.add(Configuration("LOG_ALL_AIRCRAFT_MESSAGES", LOG_ALL_AIRCRAFT_MESSAGES))
 
         session.commit()
+
+db_engine = create_engine(f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_DB_HOST')}:{os.getenv('POSTGRES_DB_PORT')}/{os.getenv('POSTGRES_DB')}")
+
+Base.metadata.create_all(db_engine) # Creates all tables that don't exist in the database
 
 load_settings()

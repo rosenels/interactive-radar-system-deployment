@@ -73,6 +73,9 @@ function RadarPage() {
 
   const [flightDetails, setFlightDetails] = useState("");
 
+  const [initialMapLatitude, setInitialMapLatitude] = useState(42.694771);
+  const [initialMapLongitude, setInitialMapLongitude] = useState(23.413245);
+  const [initialMapZoomLevel, setInitialMapZoomLevel] = useState(8);
   const [flightsUpdateIntervalInSeconds, setFlightsUpdateIntervalInSeconds] = useState(5);
   const [rememberedWarningsIntervalInSeconds, setRememberedWarningsIntervalInSeconds] = useState(60);
 
@@ -97,7 +100,7 @@ function RadarPage() {
     loadConfiguration();
 
     // Initialize the map when component mounts
-    const map = L.map("map").setView([42.694771, 23.413245], 15);
+    const map = L.map("map").setView([initialMapLatitude, initialMapLongitude], initialMapZoomLevel);
     mapRef.current = map;
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -120,7 +123,12 @@ function RadarPage() {
       map.remove();
     };
     // eslint-disable-next-line
-  }, [flightsUpdateIntervalInSeconds]);
+  }, [
+    initialMapLatitude,
+    initialMapLongitude,
+    initialMapZoomLevel,
+    flightsUpdateIntervalInSeconds
+  ]);
 
   async function loadConfiguration() {
     let data;
@@ -131,6 +139,9 @@ function RadarPage() {
       // console.error(error);
       return;
     }
+    setInitialMapLatitude(data.configuration.INITIAL_MAP_LATITUDE);
+    setInitialMapLongitude(data.configuration.INITIAL_MAP_LONGITUDE);
+    setInitialMapZoomLevel(data.configuration.INITIAL_MAP_ZOOM_LEVEL);
     setFlightsUpdateIntervalInSeconds(data.configuration.RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS);
     setRememberedWarningsIntervalInSeconds(data.configuration.WARNING_REMEMBER_INTERVAL_IN_SECONDS);
   }
