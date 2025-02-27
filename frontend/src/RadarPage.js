@@ -187,16 +187,18 @@ function RadarPage() {
         foundSpectatedFlight = true;
       }
 
-      const isGroundVehicle = flight.callsign === "GRND";
-      const iconUrl = isGroundVehicle
-        ? "https://cdn2.iconfinder.com/data/icons/driverless-autonomous-electric-car/319/car-007-512.png"
-        : "https://cdn3.iconfinder.com/data/icons/remixicon-map/24/plane-line-256.png";
-      const iconSize = isGroundVehicle ? [20, 20] : [30, 30];
-
       // Ensure latitude and longitude are not null
       if (flight.latitude === null || flight.longitude === null) {
         continue;
       }
+
+      const iconUrl = "images/aircraft_marker.webp";
+      const iconSize = [30, 30];
+      // const isGroundVehicle = flight.callsign === "GRND";
+      // const iconUrl = isGroundVehicle
+      //   ? "images/ground_vehicle_marker.webp"
+      //   : "images/aircraft_marker.webp";
+      // const iconSize = isGroundVehicle ? [20, 20] : [30, 30];
 
       if (flight.instructions !== null) {
         if (flight.instructions.altitude_valid === false) {
