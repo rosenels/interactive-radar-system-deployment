@@ -24,7 +24,7 @@ def control_flight(flight_icao):
         return make_response({"message": "Unauthorized"}, 401)
 
     with Session(db_engine) as session:
-        flight = session.scalar(select(FlightInformation).where(FlightInformation.icao == flight_icao).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS)).order_by(FlightInformation.timestamp.desc()))
+        flight = session.scalar(select(FlightInformation).where(FlightInformation.icao == flight_icao).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=configuration["MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS"])).order_by(FlightInformation.timestamp.desc()))
 
         if flight is None:
             return make_response({"message": "There is no flight with this ICAO address"}, 404)
@@ -68,8 +68,8 @@ def control_flight(flight_icao):
                 new_instructions.track_timestamp = prev_instructions.track_timestamp
 
         if new_instructions.altitude is not None:
-            if not validator.is_valid_altitude(new_instructions.altitude) or new_instructions.altitude < MINIMUM_DESCENT_ALTITUDE_IN_FEET:
-                return make_response({"message": f"Instructed altitude of {new_instructions.altitude} feet is not valid, must be at least {MINIMUM_DESCENT_ALTITUDE_IN_FEET} feet (MDA)!"}, 400)
+            if not validator.is_valid_altitude(new_instructions.altitude) or new_instructions.altitude < configuration["MINIMUM_DESCENT_ALTITUDE_IN_FEET"]:
+                return make_response({"message": f"Instructed altitude of {new_instructions.altitude} feet is not valid, must be at least {configuration['MINIMUM_DESCENT_ALTITUDE_IN_FEET']} feet (MDA)!"}, 400)
 
         if new_instructions.ground_speed is not None:
             if not validator.is_valid_ground_speed(new_instructions.ground_speed):
@@ -110,7 +110,7 @@ def stop_controlling_flight(flight_icao, token):
         return make_response({"message": "Unauthorized"}, 401)
 
     with Session(db_engine) as session:
-        flight = session.scalar(select(FlightInformation).where(FlightInformation.icao == flight_icao).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS)).order_by(FlightInformation.timestamp.desc()))
+        flight = session.scalar(select(FlightInformation).where(FlightInformation.icao == flight_icao).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=configuration["INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS"])).order_by(FlightInformation.timestamp.desc()))
 
         if flight is None:
             return make_response({"message": "There is no flight with this ICAO address"}, 404)

@@ -15,7 +15,7 @@ def raw_in_loop(sock):
     msg = sock.readline()
 
     if msg:
-        if LOG_ALL_AIRCRAFT_MESSAGES:
+        if configuration["LOG_ALL_AIRCRAFT_MESSAGES"]:
             print(msg, end="")
         # raw_decoder.parse_raw_message(msg)
         # flights = raw_decoder.flights
@@ -28,7 +28,7 @@ def sbs_in_loop(sock):
     msg = sock.readline()
 
     if msg:
-        if LOG_ALL_AIRCRAFT_MESSAGES:
+        if configuration["LOG_ALL_AIRCRAFT_MESSAGES"]:
             print(msg, end="")
         sbs_decoder.parse_sbs_message(msg)
         flights = sbs_decoder.flights
@@ -41,16 +41,16 @@ receiver_thread = None
 validator_thread = None
 
 def operate():
-    global FLIGHT_DATA_PORT, sock, quit
+    global configuration, sock, quit
 
     if not quit:
-        if FLIGHT_DATA_INPUT_MODE.upper() == "RAW-IN":
-            if FLIGHT_DATA_PORT == 0:
-                FLIGHT_DATA_PORT = RAW_IN_DEFAULT_PORT
+        if str(configuration["FLIGHT_DATA_INPUT_MODE"]).upper() == "RAW-IN":
+            if configuration["FLIGHT_DATA_PORT"] == 0:
+                configuration["FLIGHT_DATA_PORT"] = RAW_IN_DEFAULT_PORT
             loop = raw_in_loop
-        elif FLIGHT_DATA_INPUT_MODE.upper() == "SBS":
-            if FLIGHT_DATA_PORT == 0:
-                FLIGHT_DATA_PORT = SBS_DEFAULT_PORT
+        elif str(configuration["FLIGHT_DATA_INPUT_MODE"]).upper() == "SBS":
+            if configuration["FLIGHT_DATA_PORT"] == 0:
+                configuration["FLIGHT_DATA_PORT"] = SBS_DEFAULT_PORT
             loop = sbs_in_loop
         else:
             print("Wrong INPUT_MODE was selected.\n")
@@ -58,9 +58,9 @@ def operate():
 
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((FLIGHT_DATA_HOST, FLIGHT_DATA_PORT))
+            sock.connect((configuration["FLIGHT_DATA_HOST"], configuration["FLIGHT_DATA_PORT"]))
             sock = sock.makefile(mode="r")
-            print(f"Connected to {FLIGHT_DATA_HOST}:{FLIGHT_DATA_PORT}\n")
+            print(f"Connected to {configuration['FLIGHT_DATA_HOST']}:{configuration['FLIGHT_DATA_PORT']}\n")
         except:
             # print("Connection refused\n")
             return
@@ -84,7 +84,7 @@ def keep_operating():
 
     with Session(db_engine) as session:
         try:
-            flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS)).order_by(FlightInformation.timestamp.desc())))
+            flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=configuration["INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS"])).order_by(FlightInformation.timestamp.desc())))
 
             flights_icao_addresses = []
 
@@ -103,17 +103,17 @@ def keep_operating():
             current_timestamp = datetime.now()
 
             for flight_icao in flights_instructions.copy().keys():
-                if flights_instructions[flight_icao]["timestamp"] < current_timestamp - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS):
+                if flights_instructions[flight_icao]["timestamp"] < current_timestamp - timedelta(seconds=configuration["INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS"]):
                     flights_instructions.pop(flight_icao)
 
             flights_instructions_copy = flights_instructions.copy()
 
-            while current_timestamp > datetime.now() - timedelta(seconds=RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS / 2):
+            while current_timestamp > datetime.now() - timedelta(seconds=configuration["RADAR_FLIGHTS_UPDATE_TIME_IN_SECONDS"] / 2):
                 if flights_instructions_copy != flights_instructions or quit:
                     break
 
             try:
-                flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=0.8 * MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS)).order_by(FlightInformation.timestamp.desc())))
+                flights_in_db = list(session.scalars(select(FlightInformation).where(FlightInformation.timestamp > datetime.now() - timedelta(seconds=0.8 * configuration["MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS"])).order_by(FlightInformation.timestamp.desc())))
 
                 updated_flights = []
                 flights_icao_addresses = []
@@ -126,12 +126,12 @@ def keep_operating():
                 flights_in_db = updated_flights
                 updated_flights = []
 
-                atc_instructions_in_db = list(session.scalars(select(InstructionsFromATC).where(InstructionsFromATC.flight_last_seen_at > datetime.now() - timedelta(seconds=INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS)).order_by(InstructionsFromATC.timestamp.desc())))
+                atc_instructions_in_db = list(session.scalars(select(InstructionsFromATC).where(InstructionsFromATC.flight_last_seen_at > datetime.now() - timedelta(seconds=configuration["INSTRUCTION_VALIDITY_TIME_AFTER_FLIGHT_IS_LOST_IN_SECONDS"])).order_by(InstructionsFromATC.timestamp.desc())))
 
                 flights_copy = flights.copy()
 
                 for i in range(len(flights_copy)):
-                    if flights_copy[i]["last_datetime"] > datetime.now() - timedelta(seconds=MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS):
+                    if flights_copy[i]["last_datetime"] > datetime.now() - timedelta(seconds=configuration["MAX_FLIGHT_UPDATE_INTERVAL_BEFORE_CONSIDERED_AS_LOST_IN_SECONDS"]):
                         temp_flight = FlightInformation.from_flight_dict(flights_copy[i])
 
                         flights_copy[i]["instructions"] = None

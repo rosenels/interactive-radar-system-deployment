@@ -143,7 +143,7 @@ function SettingsPage() {
         <p style={{ margin: "0 10px", textAlign: "right" }}>Set warning remember interval in seconds:</p>
         <input type="number" value={warningRememberIntervalInSeconds} onChange={(e) => setWarningRememberIntervalInSeconds(e.target.value)} style={{ margin: "0 10px", width: "300px", height: "16px", alignSelf: "end" }}/>
         <p style={{ margin: "0 10px", textAlign: "right" }}>Log all received aircraft messages:</p>
-        <input type="checkbox" value={logAllAircraftMessages} onChange={(e) => { e.target.checked ? setLogAllAircraftMessages(1) : setLogAllAircraftMessages(0) }} style={{ margin: "0 10px", justifySelf: "left", width: "18px" }}/>
+        <input type="checkbox" checked={logAllAircraftMessages} onChange={(e) => {e.target.checked ? setLogAllAircraftMessages(1) : setLogAllAircraftMessages(0)}} style={{ margin: "0 10px", justifySelf: "left", width: "18px" }}/>
       </div>
       <button onClick={saveConfiguration} style={{ margin: "40px" }}>Save</button>
     </div>

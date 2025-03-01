@@ -22,25 +22,25 @@ def calculate_track_diff(track_1, track_2):
 def validate_altitude(altitude, instructed_altitude):
     if altitude is None or instructed_altitude is None:
         return True
-    if altitude < instructed_altitude - ALTITUDE_TOLERANCE_IN_FEET:
+    if altitude < instructed_altitude - configuration["ALTITUDE_TOLERANCE_IN_FEET"]:
         return False
-    if altitude > instructed_altitude + ALTITUDE_TOLERANCE_IN_FEET:
+    if altitude > instructed_altitude + configuration["ALTITUDE_TOLERANCE_IN_FEET"]:
         return False
     return True
 
 def validate_ground_speed(ground_speed, instructed_ground_speed):
     if ground_speed is None or instructed_ground_speed is None:
         return True
-    if ground_speed < instructed_ground_speed - GROUND_SPEED_TOLERANCE_IN_KNOTS:
+    if ground_speed < instructed_ground_speed - configuration["GROUND_SPEED_TOLERANCE_IN_KNOTS"]:
         return False
-    if ground_speed > instructed_ground_speed + GROUND_SPEED_TOLERANCE_IN_KNOTS:
+    if ground_speed > instructed_ground_speed + configuration["GROUND_SPEED_TOLERANCE_IN_KNOTS"]:
         return False
     return True
 
 def validate_track(track, instructed_track):
     if track is None or instructed_track is None:
         return True
-    if calculate_track_diff(track, instructed_track) > TRACK_TOLERANCE_IN_DEGREES:
+    if calculate_track_diff(track, instructed_track) > configuration["TRACK_TOLERANCE_IN_DEGREES"]:
         return False
     return True
 
@@ -62,7 +62,7 @@ def calculate_track_due_timestamp(current_track, initial_track, instructed_track
 
     diff = calculate_track_diff(instructed_track, initial_track)
 
-    return instructed_at_timestamp + timedelta(seconds = (MAX_TIME_FOR_10_DEGREES_TRACK_CHANGE_IN_SECONDS * diff) / 10)
+    return instructed_at_timestamp + timedelta(seconds = (configuration["MAX_TIME_FOR_10_DEGREES_TRACK_CHANGE_IN_SECONDS"] * diff) / 10)
 
 def validate_instructions(flight_dict, instructions):
     assert isinstance(flight_dict, dict)
@@ -83,10 +83,10 @@ def validate_instructions(flight_dict, instructions):
     flight_dict["instructions"]["atc_user_fullname"] = instructions.atc_user_fullname
     flight_dict["instructions"]["altitude"] = instructions.altitude
     flight_dict["instructions"]["altitude_valid"] = validate_altitude(flight_dict["altitude"], instructions.altitude)
-    flight_dict["instructions"]["altitude_due"] = calculate_linear_due_timestamp(flight_dict["altitude"], instructions.initial_altitude, instructions.altitude, instructions.altitude_timestamp, MAX_TIME_FOR_100_FT_ALTITUDE_CHANGE_IN_SECONDS, 100)
+    flight_dict["instructions"]["altitude_due"] = calculate_linear_due_timestamp(flight_dict["altitude"], instructions.initial_altitude, instructions.altitude, instructions.altitude_timestamp, configuration["MAX_TIME_FOR_100_FT_ALTITUDE_CHANGE_IN_SECONDS"], 100)
     flight_dict["instructions"]["ground_speed"] = instructions.ground_speed
     flight_dict["instructions"]["ground_speed_valid"] = validate_ground_speed(flight_dict["ground_speed"], instructions.ground_speed)
-    flight_dict["instructions"]["ground_speed_due"] = calculate_linear_due_timestamp(flight_dict["ground_speed"], instructions.initial_ground_speed, instructions.ground_speed, instructions.ground_speed_timestamp, MAX_TIME_FOR_10_KNOTS_GROUND_SPEED_CHANGE_IN_SECONDS, 10)
+    flight_dict["instructions"]["ground_speed_due"] = calculate_linear_due_timestamp(flight_dict["ground_speed"], instructions.initial_ground_speed, instructions.ground_speed, instructions.ground_speed_timestamp, configuration["MAX_TIME_FOR_10_KNOTS_GROUND_SPEED_CHANGE_IN_SECONDS"], 10)
     flight_dict["instructions"]["track"] = instructions.track
     flight_dict["instructions"]["track_valid"] = validate_track(flight_dict["track"], instructions.track)
     flight_dict["instructions"]["track_due"] = calculate_track_due_timestamp(flight_dict["track"], instructions.initial_track, instructions.track, instructions.track_timestamp)
