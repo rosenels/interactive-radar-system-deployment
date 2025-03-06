@@ -19,6 +19,23 @@ services:
     volumes:
       - keycloak-data:/opt
 
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    depends_on:
+      - database
+      - keycloak
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:3000"
+    depends_on:
+      - database
+      - keycloak
+      - backend
+
 volumes:
   database-data:
   keycloak-data:
